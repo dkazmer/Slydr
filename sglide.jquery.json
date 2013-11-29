@@ -1,0 +1,33 @@
+{
+    "name": "sglide",
+    "title": "sGlide",
+    "description": "jQuery plugin that generates a simple, highly flexible & feature-rich slider.",
+    "keywords": [
+        "slider",
+        "loadbar",
+        "gauge",
+        "vertical",
+        "smart",
+        "snapping",
+        "dynamic"
+    ],
+    "version": "1.7.1",
+    "author": {
+        "name": "Daniel Kazmer",
+        "email": "dk@iframework.net",
+        "url": "http://iframework.net"
+    },
+    "licenses": [
+        {
+            "type": "GPL",
+            "url": "http://www.gnu.org/licenses/gpl.html"
+        }
+    ],
+    "bugs": "https://github.com/dkazmer/sGlide/issues",
+    "homepage": "https://github.com/dkazmer/sGlide",
+    "docs": "https://github.com/dkazmer/sGlide",
+    "demo": "http://iframework.net/sGlide/",
+    "dependencies": {
+        "jquery": ">=1.7"
+    }
+}
