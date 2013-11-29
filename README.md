@@ -1,7 +1,7 @@
 sGlide
 ======
 
-sGlide is a jQuery plugin that generates a simple, light-weight, feature-rich slider, which can be easily customized and styled using regular CSS.
+sGlide is a jQuery plugin that generates a simple, light-weight, feature-rich slider, which can be easily customized and styled using regular CSS. Visit http://iframework.net/sGlide/
 
 Quickstart Guide: apply the following to an empty DIV with a unique id.
 
@@ -12,8 +12,11 @@ Quickstart Guide: apply the following to an empty DIV with a unique id.
 		height: 20,				// integer - default: 40
 		unit: 'px',				// 'px' or '%' (default; doesn't apply to height)
 		pill: false,			// boolean - default: true
-		snapPoints: 0,			// min 0; max 9
-		snapMarkers: true,		// boolean - only used when snapPoints >= 1
+		snap: {
+			points: 5,
+			markers: true,
+			onlyOnDrop: true
+		},
 		disabled: true,			// boolean - default: false
 		colorStart:				// css value
 		colorEnd:				// css value
