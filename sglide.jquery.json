@@ -1,7 +1,7 @@
 {
     "name": "sglide",
     "title": "sGlide",
-    "description": "jQuery plugin that generates a simple, highly flexible & feature-rich slider.",
+    "description": "jQuery plugin that generates a simple slider, that's highly flexible, feature-rich & mobile ready.",
     "keywords": [
         "slider",
         "loadbar",
@@ -9,9 +9,10 @@
         "vertical",
         "smart",
         "snapping",
-        "dynamic"
+        "dynamic",
+        "mobile"
     ],
-    "version": "1.7.1",
+    "version": "1.8.5",
     "author": {
         "name": "Daniel Kazmer",
         "email": "dk@iframework.net",
