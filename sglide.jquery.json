@@ -10,9 +10,11 @@
         "smart",
         "snapping",
         "dynamic",
-        "mobile"
+        "mobile",
+        "arrow",
+        "keys"
     ],
-    "version": "1.9.1",
+    "version": "1.10.0",
     "author": {
         "name": "Daniel Kazmer",
         "email": "dk@iframework.net",
