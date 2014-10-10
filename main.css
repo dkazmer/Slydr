@@ -1,0 +1,45 @@
+body {
+	/*font-family: "Trebuchet MS", Helvetica, sans-serif;*/
+	font-family: Arial, sans-serif;
+	background-color: #c0c0c0;
+	margin: 100px;
+	font-size: 16px;
+	line-height: normal;
+	text-align: center;
+}
+
+/* snap */
+#snap-options { color: #666; font-size: 11px; text-align: center; z-index: 1200; }
+.sample2:hover #snap-options { color: #222; }
+#snap-options > * { vertical-align: middle; cursor: pointer; }
+#snap-options > label { margin-right: 40px; }
+
+/* bars */
+
+.slider_bar { background-color: #999; }
+
+#slider1 { box-shadow: inset 8px 4px 16px #333; border-bottom: #eee solid 1px; }
+#slider2 { background-color: darkgray; }
+
+#slider2_markers div {
+	border-left: #999 solid 1px !important;
+	top: 2px !important;
+	float: left;
+}
+
+#slider1 .follow_bar { background-color: #693; box-shadow: inset 0 1px 3px #222; }
+#slider2 .follow_bar { background: #a60 url(img/barberpole.gif); }
+
+#slider1 .follow_bar div { box-shadow: inset 0 1px 3px #222; }
+
+.slider2_vert-marks {
+	-webkit-transform-origin: 210px 120px !important;
+	-khtml-transform-origin: 210px 120px !important;
+	-moz-transform-origin: 210px 120px !important;
+	-ms-transform-origin: 210px 120px !important;
+	transform-origin: 210px 120px !important;
+	margin: 0 auto;
+}
+
+.sglide-buttons { vertical-align: middle; border-radius: 9px; }
+.sglide-buttons:hover, .sglide-buttons:active { background-color: #fff; }

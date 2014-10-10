@@ -1,0 +1,78 @@
+<!DOCTYPE HTML>
+
+<html><head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=560, user-scalable=0;">
+<!--meta name="viewport" content="width=700; initial-scale=1.0; maximum-scale=1.0; minimum-scale=1.0; user-scalable=0;"-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+<title>sGlide - working</title>
+
+<link rel="stylesheet" href="main.css" />
+
+<script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script type="text/javascript" src="sGlide.js"></script>
+
+<script type="text/javascript">
+	$(document).ready(function(){
+
+		$('#slider1').sGlide({
+			'width': 85,
+			'height': 12,
+			'image': 'img/knob.png',
+			'startAt': 83,
+			'colorStart': '#360',
+			'colorEnd': '#693',
+			'buttons': true,
+			drag: function(o){
+				console.log('drag',o);
+				// $('.pct').html(Math.round(o.value)+'<sup>%<sup>');
+			},
+			onButton: function(o){
+				console.log('button',o);
+				// $('.pct').html(Math.round(o.value)+'<sup>%<sup>');
+			}
+		});
+
+		$('#slider2').sGlide({
+			'startAt': 50,
+			'flat': true,
+			'width': 300,
+			'unit': 'px',
+			'snap': {
+				'points': 5,
+				'markers': true,
+				'onlyOnDrop': true
+			},
+			'vertical': true,
+			'showKnob': false
+		});
+
+	});
+</script>
+
+</head><body>
+
+	<div id="slider1" class="slider_bar_1"></div>
+
+	<br />
+
+	<div id="slider2" class="slider_bar_2"></div>
+
+	<!-- <br />
+
+	<div class="sample sample2">
+		<p><b>example 2</b>: Smart snapping, with optional markers</p>
+		<div style="height:60px"><div id="slider2_"></div></div>
+		<div id="snap-options">
+			<input type="radio" name="snap" id="snap-true" onclick="" checked="checked" /> <label for="snap-true">true snap</label>
+			<input type="radio" name="snap" id="snap-hard" onclick="" /> <label for="snap-hard">hard snap</label>
+			<input type="radio" name="snap" id="snap-drop" onclick="" /> <label for="snap-drop">snap only on drop</label>
+			<input type="radio" name="snap" id="snap-nomarks" onclick="" /> <label for="snap-nomarks" style="margin-right:0">no markers</label>
+		</div>
+	</div> -->
+
+</body></html>
