@@ -3,7 +3,7 @@
 <html><head>
 
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="viewport" content="width=560, user-scalable=0;">
+<meta name="viewport" content="width=560, user-scalable=0">
 <!--meta name="viewport" content="width=700; initial-scale=1.0; maximum-scale=1.0; minimum-scale=1.0; user-scalable=0;"-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,31 +13,75 @@
 
 <link rel="stylesheet" href="main.css" />
 
+<style>
+/*#slider1 {transform-origin: 460px 260px !important;}*/
+/*#slider2 {margin: -130px -290px !important;}*/
+/*#slider1 {margin-left: 60px !important;}*/
+#slider1_vert-marks {margin-left: 60px !important;}
+</style>
+
 <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
-<script type="text/javascript" src="sGlide.js"></script>
+<script type="text/javascript" src="jquery.sglide.js"></script>
+<script type="text/javascript" src="sglide.js"></script>
 
 <script type="text/javascript">
-	$(document).ready(function(){
+	function run(){
+		sglideArr = [];
+		var elsArr = document.getElementsByClassName('slider_bar');
 
-		$('#slider1').sGlide({
-			'width': 85,
-			'height': 12,
+		for (var i = 0; i < elsArr.length; i++) {
+			sglideArr.push(new sGlide(elsArr[i], {
+				'startAt': 30,
+				'width': 700,
+				'unit': 'px',
+				'image': 'img/knob.png',
+				// 'pill': false,
+				'snap': {
+					'markers': true,
+					'points': 6
+					// 'hard': true,
+				},
+				'colorShift': ['#3a4d31', '#7bb560'],
+				// 'vertical': true,
+				'buttons': true,
+				// 'disabled': true,
+				drag: function(o){
+					console.log(o.id,o.value);
+					document.getElementById('macky').innerHTML = o.id+': '+Math.round(o.value) + '%';
+				},
+				onButton: function(o){
+					console.log(o.id,o.value);
+				}
+			}).startAt(40*(i+1)));
+		}
+
+		console.log('sglideArr',sglideArr);
+
+		/*$('.slider_bar').sGlide({
+			'startAt': 30,
+			'width': 700,
+			'unit': 'px',
 			'image': 'img/knob.png',
-			'startAt': 83,
-			'colorStart': '#360',
-			'colorEnd': '#693',
-			'buttons': true,
+			// 'pill': false,
+			'snap': {
+				'markers': true,
+				'onlyOnDrop': true,
+				'points': 6
+			},
+			'colorShift': ['#3a4d31', '#7bb560'],
+			// 'vertical': true,
+			// 'buttons': true,
+			// 'disabled': true,
 			drag: function(o){
-				console.log('drag',o);
-				// $('.pct').html(Math.round(o.value)+'<sup>%<sup>');
+				console.log(o.id,o.value);
+				document.getElementById('macky').innerHTML = o.id+': '+Math.round(o.value) + '%';
 			},
 			onButton: function(o){
-				console.log('button',o);
-				// $('.pct').html(Math.round(o.value)+'<sup>%<sup>');
+				console.log(o.id,o.value);
 			}
-		});
+		});*/
 
-		$('#slider2').sGlide({
+		/*$('#slider2').sGlide({
 			'startAt': 50,
 			'flat': true,
 			'width': 300,
@@ -49,19 +93,14 @@
 			},
 			'vertical': true,
 			'showKnob': false
-		});
-
-	});
+		});*/
+	};
 </script>
 
-</head><body>
+</head><body onload="run()">
 
-	<div id="slider1" class="slider_bar"></div>
-
-	<br />
-
-	<div id="slider2" class="slider_bar"></div>
-
+<div id="macky">hello</div>
+	<div id="slider1" class="slider_bar" data-keys="true" style="background-color:#069; border-radius:10px; height:40px;"></div><br /><div id="slider2" class="slider_bar"></div>
 	<!-- <br />
 
 	<div class="sample sample2">

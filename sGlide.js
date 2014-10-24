@@ -4,9 +4,10 @@
 
 author:		Daniel Kazmer - http://iframework.net
 created:	24.11.2012
-version:	1.10.0
+version:	2.0.0
 
 	version history:
+		2.0.0	major improvements in code structure, stability, accuracy; changed color shift property (see usage) (20.10.2014)
 		1.10.0	added keyboard functionality (03.01.2014)
 		1.9.1	bug fix: when button is pressed but released off button, button action now gets cleared (19.12.2013)
 		1.9.0	added -/+ buttons, along with the onButton and onload callbacks (18.12.2013)
@@ -39,8 +40,7 @@ version:	1.10.0
 				points		: 0
 			},
 			disabled:				// boolean - default: false
-			colorStart:				// css value
-			colorEnd:				// css value
+			colorShift:				// array of 2 css color values
 			vertical:				// boolean - default: false
 			showKnob:				// boolean - default: true
 			buttons:				// boolean - default: false
@@ -58,810 +58,908 @@ version:	1.10.0
 			- get color shifting to work with the startAt method (start at correct color)
 			- old browsers verticals (IE6/7 - low priority)
 			- fix bug: rebuilding vertical rotates again
+			- range selector
 			- fixes or implementations of these issues: http://stackoverflow.com/search?q=sglide
 
 ***********************************************************************************/
 
-(function($){
-	var methods = {
-		destroy: function(){
-			this.each(function(i, el){
-				var self	= $(el);
-				var id		= self.selector;
-				var guid	= self.attr('id');
+function sGlide(self, options){
+	var knob		= null,
+		follow		= null,
+		startAt		= 0,
+		img			= '',
+		imgLoaded	= false,
+		mobile		= false,
+		buttons		= false,
+		keyCtrl		= false,
+		// events
+		eventDocumentMouseUp	= null,
+		eventDocumentMouseMove	= null,
+		eventDocumentMouseDown	= null,
+		eventDocumentKeyUp		= null,
+		eventDocumentKeyDown	= null,
+		eventKnobMouseUp		= null,
+		eventKnobMouseDown		= null,
+		eventWindowResize		= null,
+		eventBarMouseDown		= null,
+		eventPlusMouseUp		= null,
+		eventPlusMouseDown		= null;
 
-				// unwrap vertical buttons
-				if ($('.'+guid+'_vert-marks')[0]){
-					var vert_marks = $('.'+guid+'_vert-marks');
-					if (vert_marks.data('wrap') !== undefined){ vert_marks.unwrap(); vert_marks.removeAttr('data-wrap'); }
+	this.destroy = function(){
+		var guid = self.getAttribute('id');
+
+		// unwrap vertical buttons
+		var vertContainer = get('#'+guid+'_vert-marks');
+		if (vertContainer){
+			vertContainer.parentNode.insertBefore(self, vertContainer.nextSibling);
+			vertContainer.remove();
+		}
+
+		var markers = get('#'+guid+'_markers');
+		if (markers) markers.remove();
+
+		var mEvt = {
+			'down'	: 'mousedown',
+			'up'	: 'mouseup',
+			'move'	: 'mousemove'
+		};
+
+		if (mobile){
+			mEvt.down = 'touchstart'; mEvt.up = 'touchend'; mEvt.move = 'touchmove';
+			document.removeEventListener(mEvt.down, eventDocumentMouseDown);
+		} else if (keyCtrl){
+			document.removeEventListener('keydown', eventDocumentKeyDown);
+			document.removeEventListener('keyup', eventDocumentKeyUp);
+		}
+
+		// remove buttons
+		if (buttons){
+			var plus = get('#'+guid+'_plus'), minus = get('#'+guid+'_minus');
+			plus.removeEventListener(mEvt.up);
+			plus.removeEventListener(mEvt.down);
+			minus.removeEventListener(mEvt.up);
+			minus.removeEventListener(mEvt.down);
+			plus.remove();
+			minus.remove();
+			// unwrap
+			if (!vertContainer){
+				var buttonsContainer = get('#'+guid+'_button-marks');
+				if (buttonsContainer){
+					buttonsContainer.parentNode.insertBefore(buttonsContainer.childNodes[0], buttonsContainer.nextSibling);
+					buttonsContainer.remove();
 				}
+			}
+		}
 
-				// remove buttons
-				if ($('#'+guid+'_plus')[0]) $('#'+guid+'_minus, #'+guid+'_plus').remove();
+		document.removeEventListener(mEvt.move, eventDocumentMouseMove);
+		document.removeEventListener(mEvt.up, eventDocumentMouseUp);
+		window.removeEventListener('resize', eventWindowResize);
+		window.removeEventListener('orientationchange', eventWindowResize);
+		self.removeEventListener(mEvt.down, eventBarMouseDown);
+		knob.removeEventListener(mEvt.up, eventKnobMouseUp);
+		knob.removeEventListener(mEvt.down, eventKnobMouseDown);
+		knob.remove();
+		follow.removeEventListener(mEvt.down, eventBarMouseDown);
+		follow.remove();
+		self.removeAttribute('style');
+		self.removeAttribute('data-state');
 
-				// remove vertical wrapping
-				if (self.data('wrap') !== undefined){ self.unwrap(); self.removeAttr('data-wrap'); }
-				else
-					self.css({
-						'-webkit-transform': 'translate3d(0,0,0)',
-						'-khtml-transform': 'translate3d(0,0,0)',
-						'-moz-transform': 'translate3d(0,0,0)',
-						'-ms-transform': 'translate3d(0,0,0)',
-						'transform': 'translate3d(0,0,0)'
-					});
+		for (var i in this) delete this[i];
+	};
 
-				if ($(id+'_markers').length > 0) $(id+'_markers').remove();
+	this.startAt = function(pct){
+		startAt = pct;
+		
+		// set pixel positions
+		var selfWidth = self.offsetWidth;
+		var knobWidth = knob.offsetWidth;
 
-				var mEvt_down = 'mousedown', mEvt_up = 'mouseup', mEvt_move = 'mousemove';
-				if (methods.mobile){
-					mEvt_down = 'touchstart'; mEvt_up = 'touchend'; mEvt_move = 'touchmove';
-				} else
-					$(document).off('keydown.'+guid).off('keyup.'+guid);
+		// constraints
+		if (pct <= 0)			pct = 0;
+		else if (pct >= 100)	pct = 100;
 
-				if (methods.buttons){
-					$('#'+guid+'_plus').off(mEvt_down).off(mEvt_up);
-					$('#'+guid+'_minus').off(mEvt_down).off(mEvt_up);
+		// set pixel positions
+		var px = (selfWidth - knobWidth) * pct / 100 + (knobWidth / 2);
+		var pxAdjust = px - (knobWidth / 2);
+
+		// gui
+		knob.style.left = pxAdjust+'px';
+		follow.style.width = px+'px';
+
+		return this;
+	};
+
+	function get(id){
+		switch (id[0]){
+			case '#':	return document.getElementById(id.substr(1));
+			case '.':	return document.getElementsByClassName(id.substr(1));
+			default:	return document.getElementsByTagName(id);
+		}
+	}
+
+	function wrapAll(elements, wrapperStr){
+		// set wrapper element
+		var a = document.createElement('div');
+		a.innerHTML = wrapperStr;
+		var wrapperEl = a.childNodes[0];
+		elements[0].parentNode.insertBefore(wrapperEl, elements[0]);
+
+		// append it
+		for (var i = 0; i < elements.length; i++) wrapperEl.appendChild(elements[i]);
+		a.remove();
+	}
+
+	function clone(obj){
+		if (obj === null || typeof(obj) != 'object') return obj;
+
+		var temp = obj.constructor(); // changed
+
+		for (var key in obj){
+			if (obj.hasOwnProperty(key)){
+				temp[key] = clone(obj[key]);
+			}
+		}
+
+		return temp;
+	}
+
+	function extend(a, b, isCss){
+		var c = isCss ? b : {};
+		// for (var p in a) c[p] = (b[p] == null) ? a[p] : b[p];
+		for (var p in a){
+			if (b[p] instanceof Array){
+				c[p] = [];
+				for (var i = 0; i < b[p].length; i++){
+					if (typeof b[p][i] == 'object') extend(a[p][i], b[p][i]);
+					else c[p].push(b[p][i]);
 				}
-				
-				$(document).off(mEvt_move+'.'+guid).off(mEvt_up+'.'+guid);
-				$(window).off('orientationchange.'+guid);
-				self.off(mEvt_down);
-				self.children('.slider_knob').off(mEvt_up).off(mEvt_down).remove();
-				self.children('.follow_bar').off(mEvt_down).remove();
-				$(id).removeAttr('style').removeAttr('data-state');
+			}
+			else if (typeof b[p] == 'object') c[p] = extend(a[p], b[p]);
+			else c[p] = (b[p] === undefined) ? a[p] : b[p];
+		}
+
+		return c;
+	}
+
+	function css(el, styles, prefixes){
+		var existingArr	= (el.getAttribute('style') ? el.getAttribute('style').split(';') : []),
+			existingObj	= {},
+			stl			= null;
+
+		// create browser prefixes
+		if (prefixes){
+			var temp = {};
+			for (var key in styles){
+				if (styles.hasOwnProperty(key)){
+					for (var i = 0; i < prefixes.length; i++){
+						temp[prefixes[i]+key] = styles[key];
+					}
+				}
+			}
+			styles = temp;
+		}
+
+		// create string
+		for (var i = 0; i < existingArr.length; i++){
+			stl = existingArr[i].split(':');
+			if (stl.length < 2) break;
+			existingObj[stl[0].trim()] = stl[1].trim();
+		}
+
+		// format and set style
+		if (Object.keys(existingObj).length === 0) existingObj = styles;
+		var str = JSON.stringify(extend(existingObj, styles, true)).replace(/\{*\}*"*/g, '').replace(/,/g, '; ') || '';
+		el.setAttribute('style', str.trim());
+	}
+
+	(function(document, that, $){
+		if (self instanceof Element === false) throw new Error('sGlide: first param expected object<Element>, found '+(typeof self));
+		if (options instanceof Object === false) throw new Error('sGlide: second param expected object, found '+(typeof options));
+
+		var guid = self.id;
+
+		// no id? give one!
+		if (!guid) guid = self.id = 'sglide-'+Math.random(1, 999);
+
+		// add assets
+		self.innerHTML = '<div class="follow_bar"></div><div class="slider_knob"></div>';
+
+		if (self.childNodes[0].className == 'slider_knob'){
+			knob = self.childNodes[0];
+			follow = self.childNodes[1];
+		} else {
+			knob = self.childNodes[1];
+			follow = self.childNodes[0];
+		}
+
+		//------------------------------------------------------------------------------------------------------------------------------------
+		// form
+
+		var settings = extend({
+			'startAt'		: 0,
+			'image'			: 'none',	// full path of image
+			'height'		: 40,
+			'width'			: 100,
+			'unit'			: '%',	// 'px' or '%'
+			'pill'			: true,
+			'snap'			: {
+				'markers'	: false,
+				'hard'		: false,
+				'onlyOnDrop': false,
+				'points'	: 0
+			},
+			'disabled'		: false,
+			'colorShift'	: [],
+			'vertical'		: false,
+			'showKnob'		: true,
+			'buttons'		: false
+		}, options);
+
+		self.removeAttribute('style');	// remove user inline styles
+
+		var isMobile	= false,
+			mEvt		= {
+				'down'	: 'mousedown',
+				'up'	: 'mouseup',
+				'move'	: 'mousemove'
+			},
+			uAgent		= navigator.userAgent;
+
+		if (uAgent.match(/Android/i) ||
+			uAgent.match(/webOS/i) ||
+			uAgent.match(/iPhone/i) ||
+			uAgent.match(/iPad/i) ||
+			uAgent.match(/iPod/i) ||
+			// uAgent.match(/Windows Phone/i) ||
+			uAgent.match(/BlackBerry/i)){
+			isMobile = true;
+			mEvt.down = 'touchstart'; mEvt.up = 'touchend'; mEvt.move = 'touchmove';
+			if (window.navigator.msPointerEnabled){
+				mEvt.down = 'MSPointerDown'; mEvt.up = 'MSPointerUp'; mEvt.move = 'MSPointerMove';
+			}
+			var touchX = null, touchY = null;
+		} else if (uAgent.match(/Windows Phone/i)){
+			// alert('WP');
+			self.addEventListener("MSGestureStart MSGestureChange", function(e){
+				e.preventDefault();
+				return false;
 			});
-		},
-		startAt: function(pct, animated){
-			this.each(function(i, el){
-				var self		= $(el);
-				var knob		= self.children('.slider_knob');
-				var follow		= self.children('.follow_bar');
+		}
 
-				if (typeof animated != 'boolean') animated = false;
-
-				if (pct <= 0){
-					pct = 0;
-					if (!animated){
-						knob.css('left', '0px');
-						follow.css('width', '0px');
-					} else {
-						knob.animate({'left': '0px'}, 200);
-						follow.animate({'width': '0px'}, 200);
-					}
-				} else if (pct >= 100){
-					pct = 100;
-					if (!animated){
-						knob.css('left', self.width()-knob.width()+'px');
-						follow.css('width', self.width()+'px');
-					} else {
-						knob.animate({'left': self.width()-knob.width()+'px'}, 200);
-						follow.animate({'width': self.width()+'px'}, 200);
-					}
-				} else {
-					var pxl = self.width() * pct / 100;
-					if (methods.img){
-						if (!animated)	knob.css('left', pxl-(knob.width()/2)+'px');
-						else			knob.animate({'left': pxl-(knob.width()/2)+'px'}, 200);
-					} else {
-						if (!animated)	knob.css('left', pxl+'px');
-						else			knob.animate({'left': pxl+'px'}, 200);
-					}
-
-					if (!animated)	follow.css('width', pxl+'px');
-					else			follow.animate({'width': pxl+'px'}, 200);
-				}
-			});
-		},
-		init: function(options){
-			this.each(function(i, el){
-				var self = $(el);
+		// variables
+		var THE_VALUE		= settings.startAt,
+			result			= 0,
+			vert			= settings.vertical,
+			markers			= (settings.snap.points > 0 && settings.snap.points <= 9 && settings.snap.markers),
+			knob_bg			= '#333',
+			knob_width		= (settings.showKnob ? '2%' : '0'),
+			self_height		= Math.round(settings.height)+'px',
+			knob_height		= 'inherit',
+			r_corners		= settings.pill,
+			imageBln		= (settings.image != 'none' && settings.image !== '' && !settings.disabled) ? true : false,
+			colorChangeBln	= (settings.colorShift.length > 1) ? true : false;
 			
-				// add assets
-				self.html('<div class="follow_bar"></div><div class="slider_knob"></div>');
+		keyCtrl				= (self.getAttribute('data-keys') == 'true') ? true : false;
+		buttons				= settings.buttons;
 
-				var guid		= self.attr('id');
-				var knob		= self.children('.slider_knob');
-				var follow		= self.children('.follow_bar');
+		if (imageBln){	// if image
+			img = settings.image;
 
-				//------------------------------------------------------------------------------------------------------------------------------------
-				// form
+			knob.innerHTML = '<img src="'+img+'" style="visibility:hidden" />';
+			var imgEl = knob.childNodes[0];
+			imgEl.onload = function(){
+				imgLoaded = true;
+				
+				css(knob, {'width': 'auto'});
 
-				var settings = $.extend({
-					'startAt'		: 0,
-					'image'			: 'none',	// full path of image
-					'height'		: 40,
-					'width'         : 100,
-					'unit'			: '%',	// 'px' or '%'
-					'pill'			: true,
-					'snap'			: {
-						'markers'	: false,
-						'hard'		: false,
-						'onlyOnDrop': false,
-						'points'	: 0
-					},
-					'disabled'		: false,
-					'colorStart'	: '',
-					'colorEnd'		: '',
-					'vertical'		: false,
-					'showKnob'		: true,
-					'buttons'		: false
-				}, options);
+				var thisHeight = imgEl.offsetHeight;
+				knob_width = imgEl.offsetWidth+'px';
+				knob_height = thisHeight+'px';
+				
+				knob_bg = 'url('+img+')';
+				css(knob, {
+					'width': knob_width,
+					'height': knob_height,
+					'background': knob_bg
+				});
+				css(follow, {
+					'height': knob_height,
+					'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0px'
+				});
+				css(self, {
+					'height': knob_height,
+					'border-radius': r_corners ? thisHeight / 2 + 'px' : '0px'
+				});
 
-				self.removeAttr('style');	// remove user inline styles
+				imgEl.remove();
 
-				// mobile check
-				var mobile = false;
-				var mEvt_down = 'mousedown', mEvt_up = 'mouseup', mEvt_move = 'mousemove';
-				var uAgent = navigator.userAgent;
-				if (uAgent.match(/Android/i) ||
-					uAgent.match(/webOS/i) ||
-					uAgent.match(/iPhone/i) ||
-					uAgent.match(/iPad/i) ||
-					uAgent.match(/iPod/i) ||
-					// uAgent.match(/Windows Phone/i) ||
-					uAgent.match(/BlackBerry/i)){
-					methods.mobile = mobile = true;
-					mEvt_down = 'touchstart'; mEvt_up = 'touchend'; mEvt_move = 'touchmove';
-					if (window.navigator.msPointerEnabled){
-						mEvt_down = 'MSPointerDown'; mEvt_up = 'MSPointerUp'; mEvt_move = 'MSPointerMove';
-					}
-					var touchX = null, touchY = null;
-				} else if (uAgent.match(/Windows Phone/i)){
-					// alert('WP');
-					self.on("MSGestureStart MSGestureChange", function(e){
-						e.preventDefault();
+				if (thisHeight > settings.height){
+					var knobMarginValue = (thisHeight-settings.height)/2;
+					css(self, {
+						'height': settings.height+'px',
+						'margin-top': knobMarginValue+'px'
 					});
-				}
-
-				// variables
-				var THE_VALUE		= settings.startAt;
-				var result			= 0;
-				var vert			= settings.vertical;
-				var markers			= (settings.snap.points > 0 && settings.snap.points <= 9 && settings.snap.markers);
-				var knob_bg			= '#333';
-				var knob_width		= (settings.showKnob ? '2%' : '0');
-				var self_height		= Math.round(settings.height)+'px';
-				var knob_height		= 'inherit';
-				var r_corners		= settings.pill;
-				var b_shad			= 0, b_shad_c = '#666';
-				var imageBln		= (settings.image != 'none' && settings.image !== '' && !settings.disabled);
-				var knobImageLoaded	= false;
-
-				if (imageBln){	// if image
-					methods.img = settings.image;
-					knob.html('<img src="'+settings.image+'" style="visibility:hidden" />');
-					// self_height = 'auto';
-					knob.children('img').load(function(){
-						knobImageLoaded = true;
-						// $(this).css({'width':'8px', 'position': 'absolute', 'box-sizing': 'content-box'});
-						knob.css('width', 'auto');
-						var thisHeight = $(this).height();
-						knob_width = $(this).width()+'px';
-						knob_height = thisHeight+'px';
-						
-						knob_bg = 'url('+settings.image+')';
-						knob.css({
-							'width': knob_width,
-							'height': knob_height,
-							'background': knob_bg
-						});
-						follow.css({
-							'height': knob_height,
-							'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0px'
-						});
-						self.css({
-							'height': knob_height,
-							'border-radius': r_corners ? thisHeight / 2 + 'px' : '0px'
-						});
-
-						$(this).remove();
-
-						self.knobMarginValue = 0;
-						if (thisHeight > settings.height){
-							knobMarginValue = (thisHeight-settings.height)/2;
-							self.css({
-								'height': settings.height+'px',
-								'margin-top': knobMarginValue+'px'
-							});
-							knob.css({
-								'top': '-'+knobMarginValue+'px'
-							});
-							follow.css({
-								'height': settings.height+'px',
-								'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0px'
-							});
-						} else {
-							// children stay inside parent
-							self.css('overflow', 'hidden');
-
-							// adjust color shifter height
-							follow.find('div').css('height', knob_height);
-						}
-						setStartAt();
+					css(knob, {
+						'top': '-'+knobMarginValue+'px'
+					});
+					css(follow, {
+						'height': settings.height+'px',
+						'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0px'
 					});
 				} else {
-					knobImageLoaded = true;
-					self.css({'border-radius': r_corners ? settings.height / 2 + 'px' : '0px'});
+					// children stay inside parent
+					css(self, {'overflow': 'hidden'});
+				}
+			};
+		} else {
+			imgLoaded = true;
+			css(self, {'border-radius': r_corners ? settings.height / 2 + 'px' : '0px', 'overflow': 'hidden'});
+			css(follow, {'border-radius': (r_corners ? settings.height / 2 + 'px 0 0 '+settings.height / 2 + 'px' : '0px')});
+		}
 
-					if (knob.children('img').height() <= settings.height){
-						// children stay inside parent (not working in Chrome)
-						self.css('overflow', 'hidden');
-					} else {
-						follow.css('border-radius', r_corners ? settings.height / 2 + 'px' : '0px');
+		var unit = settings.unit, width = settings.width;
+		if (unit != 'px' && unit != '%') unit = '%';
+		else if (unit == 'px') width = Math.round(width);
+		else if (unit == '%' && Math.round(width) > 100) width = 100;
+
+		var cssPrefixes = [
+				'-webkit-',
+				'-khtml-',
+				'-moz-',
+				'-ms-',
+				'-o-',
+				''
+			],
+			cssBorderBox	= {'box-sizing': 'border-box'},
+			cssContentBox	= {'box-sizing': 'content-box'},
+			cssUserSelect	= {'user-select': 'none'},
+			cssRotate		= {'transform': 'rotate(-90deg)'};
+
+		css(self, {
+			'width': width + unit,
+			'height': self_height,
+			'text-align': 'left',
+			'margin': 'auto',
+			'cursor': (!settings.disabled ? 'pointer' : 'default'),
+			'z-index': '997',
+			'position': 'relative',
+			'-webkit-touch-callout': 'none'
+		});
+		css(self, clone(cssContentBox), cssPrefixes);
+		css(self, clone(cssUserSelect), cssPrefixes);
+
+		css(knob, {
+			'width': knob_width,
+			'background': knob_bg,
+			'height': knob_height,
+			'display': (!settings.disabled ? 'inline-block' : 'none'),
+			'font-size': '0',
+			'position': 'relative',
+			'z-index': '999'
+		});
+		css(knob, clone(cssContentBox), cssPrefixes);
+
+		css(follow, {
+			'position': (!settings.disabled ? 'absolute' : 'static'),	// static when 'disabled' for self.overflow.hidden to work in Chrome
+			'height': 'inherit',//knob.offsetHeight+'px',
+			'width': '0',
+			'z-index': '998'
+		});
+		css(follow, clone(cssContentBox), cssPrefixes);
+
+		if (vert) var vertWidth = self.offsetWidth;
+
+		// snap to
+		var snapping_on = false;
+		var snaps = Math.round(settings.snap.points);
+		var snapPctValues = [0];
+		var drawSnapmarks = function(resize){
+			if (snaps === 1) snaps = 2;
+			
+			// pixels
+			var kw = knob.offsetWidth;
+			var w = self.offsetWidth - kw;
+			var increment = w / (snaps - 1);
+			var snapValues = [0];
+			var step = increment;
+			while (step <= w+2){	// added 2px to fix glitch when drawing last mark at 7 or 8 snaps (accounts for decimal)
+				snapValues.push(step);
+				step += increment;
+			}
+			// percentage
+			increment = 100 / (snaps - 1);
+			step = increment;
+			while (step <= 101){	// added 1% to fix glitch when drawing last mark at 7 or 8 snaps (accounts for decimal)
+				snapPctValues.push(step);
+				step += increment;
+			}
+
+			snapping_on = true;
+
+			// markers
+			if (markers){
+				if (!resize){
+					// self.parentNode.insertBefore('<div id="'+guid+'_markers"></div>', self.nextSibling);
+					self.insertAdjacentHTML('afterend', '<div id="'+guid+'_markers"></div>');
+					
+					var marks = $('#'+guid+'_markers');
+					
+					css(marks, {
+						'width': self.offsetWidth+'px', //settings.width + unit,
+						'margin': 'auto',
+						'padding-left': (kw/2)+'px',
+						'-webkit-touch-callout': 'none'
+					});
+					css(marks, {'box-sizing': 'border-box'}, cssPrefixes);
+					css(marks, {'user-select': 'none'}, cssPrefixes);
+				} else {
+					var marks = $('#'+guid+'_markers');
+					marks.innerHTML = '';
+				}
+
+				var str = '';
+
+				for (var i = 0; i < snapValues.length; i++)
+					str += '<div style="display:inline-block; width:0; height:5px; border-left:#333 solid 1px; position:relative; left:'+
+						(snapValues[i]-i)+'px; float:left"></div>';
+
+				marks.innerHTML = str;
+			}
+		};
+
+		// -----------
+
+		// vertical
+		var verticalTransform = function(){
+			if (markers && snaps > 0 && snaps < 10){
+				var a = [self, $('#'+guid+'_markers')];
+
+				wrapAll(a, '<div id="'+guid+'_vert-marks" style="margin:0; z-index:997; width:'+width+unit+
+					'; -webkit-backface-visibility:hidden; -moz-backface-visibility:hidden; -ms-backface-visibility:hidden; backface-visibility:hidden"></div>');
+
+				var vmarks = $('#'+guid+'_vert-marks');
+
+				// self.setAttribute('data-wrap', 'true');
+
+				css(self, {'width': '100%'});
+				css(vmarks, clone(cssContentBox), cssPrefixes);
+				css(vmarks, clone(cssRotate), cssPrefixes);
+				css(vmarks, {'filter': 'progid:DXImageTransform.Microsoft.BasicImage(rotation=3)'});
+				css(vmarks, {'transform-origin': vertWidth+'px 0'}, cssPrefixes);
+
+				for (var i = 0; i < a.length; i++)
+					css(a[i], {'margin': '0'});
+			} else {
+				// check whether even by even or odd by odd to fix blurred elements
+				css(self, {'margin': '0', 'top': '0', 'left': '0'});
+				css(self, {'backface-visibility': 'hidden'}, cssPrefixes);
+				css(self, clone(cssRotate), cssPrefixes);
+				css(self, {'filter': 'progid:DXImageTransform.Microsoft.BasicImage(rotation=3)'});
+				css(self, {'transform-origin': vertWidth+'px 0'}, cssPrefixes);
+			}
+		};
+
+		// -----------
+
+		// buttons
+		var drawButtons = function(){
+			knob_adjust = knob.offsetWidth / self.offsetWidth * 50;
+
+			var vertStyles	= '; z-index:1000; position:relative; top:30px',
+				plusStr		= '<div class="sglide-buttons" id="'+guid+'_plus" style="display:inline-block; cursor:pointer'+(vert ? vertStyles : '')+'">&nbsp;+&nbsp;</div>',
+				minusStr	= '<div class="sglide-buttons" id="'+guid+'_minus" style="display:inline-block; cursor:pointer'+(vert ? vertStyles : '')+'">&nbsp;&minus;&nbsp;</div>';
+
+			if (markers){
+				if (!vert){
+					css(self, {'width': 'auto'});
+					var a = (vert) ? [$('#'+guid+'_vert-marks')] : [$('#'+guid), $('#'+guid+'_markers')];
+					wrapAll(a, '<div id="'+guid+'_button-marks" style="display:inline-block; vertical-align:middle; width:'+width+unit+'"></div>');
+					var q = $('#'+guid+'_button-marks');
+				} else {
+					var q = $('#'+guid+'_vert-marks');
+				}
+
+				q.insertAdjacentHTML('afterend', plusStr);
+				q.insertAdjacentHTML('beforebegin', minusStr);
+			} else {
+				css(self, {
+					'display': (!vert) ? 'inline-block' : 'block',
+					'vertical-align': 'middle'
+				});
+
+				self.insertAdjacentHTML('afterend', plusStr);
+				self.insertAdjacentHTML('beforebegin', minusStr);
+			}
+
+			var plusBtn		= $('#'+guid+'_plus'),
+				minusBtn	= $('#'+guid+'_minus');
+
+			css(minusBtn, clone(cssUserSelect), cssPrefixes);
+			css(plusBtn, clone(cssUserSelect), cssPrefixes);
+
+			if (!settings.disabled){
+				plusBtn.addEventListener(mEvt.down, function(){
+					btn_is_down = true;
+					btnTriggers('>');
+					btn_timers = setTimeout(function(){
+						btnHold('>');
+					}, 500);
+				});
+				plusBtn.addEventListener(mEvt.up, btnClearAction);
+
+				minusBtn.addEventListener(mEvt.down, function(){
+					btn_is_down = true;
+					btnTriggers('<');
+					btn_timers = setTimeout(function(){
+						btnHold('<');
+					}, 500);
+				});
+				minusBtn.addEventListener(mEvt.up, btnClearAction);
+			}
+		}, btnTriggers = function(direction, smoothBln){
+			// if startAt changed on instance
+			if (startAt !== null && THE_VALUE !== startAt) THE_VALUE = startAt;
+
+			startAt = null;
+
+			var set_value = THE_VALUE;
+			if (btn_snap){
+				var intvl = 100 / (settings.snap.points - 1);
+				var p = intvl;
+				for (var i = 0; i < settings.snap.points; i++){
+					if (intvl >= THE_VALUE){
+						if (direction == '>')	THE_VALUE = (Math.round(intvl) > Math.round(THE_VALUE) ? intvl : intvl+p);
+						else					THE_VALUE = intvl-p;
+						break;
+					} else intvl += p;
+				}
+			} else {
+				if (direction == '>')	THE_VALUE+=(smoothBln ? 1 : 10);
+				else					THE_VALUE-=(smoothBln ? 1 : 10);
+			}
+
+			set_value = THE_VALUE;	// leave THE_VALUE out of visual adjustments
+
+			// constraints
+			if ((THE_VALUE+knob_adjust) > 100)	{ THE_VALUE = 100; set_value = 100 /*- knob_adjust*/; }
+			else if (THE_VALUE-knob_adjust < 0)	{ THE_VALUE = 0; set_value = 0 /*+ knob_adjust*/; }
+
+			// set pixel positions
+			var px = (self.offsetWidth - knob.offsetWidth) * set_value / 100 + (knob.offsetWidth / 2);
+			var pxAdjust = px - knob.offsetWidth / 2;
+
+			// gui
+			knob.style.left = pxAdjust+'px';// (set_value-knob_adjust)+'%';
+			follow.style.width = px+'px';// set_value+'%';
+			if (colorChangeBln) colorChange(set_value);
+
+			// output
+			if (options.onButton) options.onButton({'id':guid, 'value':THE_VALUE, 'el':self});
+		}, btnHold = function(dir){
+			var btnHold_timer = setInterval(function(){
+				if (btn_is_down) btnTriggers(dir, true);
+				else clearInterval(btnHold_timer);
+			}, (btn_snap ? 201 : 10));
+		}, btnClearAction = function(){
+			btn_is_down = false;
+			clearTimeout(btn_timers);
+		}, knob_adjust = 0, btn_is_down = false, btn_timers = null;
+		var btn_snap = (settings.snap.points > 0 && settings.snap.points <= 9 && (settings.snap.hard || settings.snap.onlyOnDrop));
+
+		//------------------------------------------------------------------------------------------------------------------------------------
+		// function
+
+		// knob
+		var is_down = false;
+
+		eventKnobMouseDown = function(){
+			is_down = true;
+			self.setAttribute('data-state', 'active');
+		};
+		eventKnobMouseUp = function(){
+			is_down = false;
+		};
+
+		knob.addEventListener(mEvt.down, eventKnobMouseDown);
+		knob.addEventListener(mEvt.up, eventKnobMouseUp);
+
+		// snapping
+		var storedSnapValue = 's-1';
+		var doSnap = function(kind, m){
+			if (snaps > 0 && snaps < 10){	// min 1, max 9
+				var knobWidth = knob.offsetWidth;
+				var selfWidth = self.offsetWidth;
+				// var pctFive = selfWidth / 20 + 10;
+				var pctFive = selfWidth * (10-snaps) / 100 - 2;
+
+				// % to px
+				var snapPixelValues = [];
+				for (var j = 0; j < snapPctValues.length; j++){
+					snapPixelValues.push((selfWidth - knobWidth) * snapPctValues[j] / 100);
+				}
+
+				// get closest px mark, and set %
+				var closest = null, pctVal = 0;
+				for (var i = 0; i < snapPixelValues.length; i++) {
+					if (closest === null || Math.abs(snapPixelValues[i] - m) < Math.abs(closest - m)){
+						closest = snapPixelValues[i];
+						pctVal = snapPctValues[i];
 					}
 				}
 
-				var unit = settings.unit, width = settings.width;
-				if (unit != 'px' && unit != '%') unit = '%';
-				else if (unit == 'px') width = Math.round(width);
-				else if (unit == '%' && Math.round(width) > 100) width = 100;
+				// physically snap it
+				if (kind == 'drag'){
+					if (settings.snap.hard){
+						knob.style.left = closest+'px';
+						follow.style.width = closest+knobWidth/2+'px';
+						doOnSnap(closest, pctVal);
+					} else {
+						if (Math.round(Math.abs(closest - m)) < pctFive){
+							knob.style.left = closest+'px';
+							follow.style.width = closest+knobWidth/2+'px';
+							doOnSnap(closest, pctVal);
+						} else storedSnapValue = 's-1';
+					}
+				} else {
+					knob.style.left = closest+'px';
+					follow.style.width = closest+knobWidth/2+'px';
+					return closest;
+				}
+			}
+		}, doOnSnap = function(a, b){ // callback: onSnap
+			if (options.onSnap && 's'+a !== storedSnapValue){
+				storedSnapValue = 's'+a;
+				options.onSnap({'id':guid, 'value':b, 'el':self});
+			}
+		};
 
-				var cssContentBox = {
-					'-webkit-box-sizing': 'content-box',
-					'-khtml-box-sizing': 'content-box',
-					'-moz-box-sizing': 'content-box',
-					'-ms-box-sizing': 'content-box',
-					'box-sizing': 'content-box'
-				}, cssUserSelect = {
-					'-webkit-user-select': 'none',
-					'-khtml-user-select': 'none',
-					'-moz-user-select': 'none',
-					'-ms-user-select': 'none',
-					'user-select': 'none'
-				}, cssRotate = {
-					'-webkit-transform': 'rotate(-90deg)',
-					'-khtml-transform': 'rotate(-90deg)',
-					'-moz-transform': 'rotate(-90deg)',
-					'-ms-transform': 'rotate(-90deg)',
-					'transform': 'rotate(-90deg)',
-					'-webkit-transform-origin': '0 0',
-					'-khtml-transform-origin': '0 0',
-					'-moz-transform-origin': '0 0',
-					'-ms-transform-origin': '0 0',
-					'transform-origin': '0 0',
-					'filter': 'progid:DXImageTransform.Microsoft.BasicImage(rotation=3)'
-				};
+		// keyboard controls
+		if (!isMobile && keyCtrl){
+			var keycode, keydown = false,
+				codeBack	= (vert) ? 40 : 37,
+				codeFwd		= (vert) ? 38 : 39;
 
-				self.css({
-					'width': width + unit,
-					'height': self_height,
-					'text-align': 'left',
-					'margin': 'auto',
-					'cursor': (!settings.disabled ? 'pointer' : 'default'),
-					'z-index': '997',
-					'position': 'relative',
-					'-webkit-touch-callout': 'none'
-				}).css(cssContentBox).css(cssUserSelect);
+			eventDocumentKeyDown = function(e){
+				if (!keydown && !settings.disabled){
+					if (window.event) keycode = window.event.keyCode;
+					else if (e) keycode = e.which;
 
-				knob.css({
-					'width': knob_width,
-					'background': knob_bg,
-					'height': knob_height,
-					'display': (!settings.disabled ? 'inline-block' : 'none'),
-					'font-size': '0px',
-					'position': 'relative',
-					'z-index': '999'
-				}).css(cssContentBox);
+					if (keycode == codeBack){
+						btn_is_down = true;
+						btnTriggers('<');
+						btn_timers = setTimeout(function(){
+							btnHold('<');
+						}, 500);
+					} else if (keycode == codeFwd){
+						btn_is_down = true;
+						btnTriggers('>');
+						btn_timers = setTimeout(function(){
+							btnHold('>');
+						}, 500);
+					}
+					keydown = true;
+				}
+			};
+			eventDocumentKeyUp = function(){
+				keydown = false;
+				btnClearAction();
+			};
 
-				follow.css({
-					'position': (!settings.disabled ? 'absolute' : 'static'),	// static when 'disabled' for self.overflow.hidden to work in Chrome
-					'height': knob.height()+'px',
-					'width': '0px',
-					'z-index': '998'
-				}).css(cssContentBox);
+			document.addEventListener('keydown', eventDocumentKeyDown);
+			document.addEventListener('keyup', eventDocumentKeyUp);
+		}
+
+		if (isMobile){
+			eventDocumentMouseDown = function(e){
+				// is_down = false;
+				touchX = e.targetTouches[0].pageX;
+				touchY = e.targetTouches[0].pageY;
+			};
+			document.addEventListener(mEvt.down, eventDocumentMouseDown);
+		}
+		if (isMobile || uAgent.match(/Windows Phone/i)){
+			// orientation
+			window.addEventListener('orientationchange', eventWindowResize);
+		}
+
+		eventDocumentMouseMove = function(e){
+			e = e || event;	// ie fix
+
+			var x			= null,
+				selfWidth	= self.offsetWidth,
+				knobWidth	= knob.offsetWidth;
+
+			if (vert){
+				var base = self.offsetTop + selfWidth;
+				if (isMobile){
+					touchY = e.targetTouches[0].pageY;
+					x = base - touchY;
+				} else x = base - e.pageY;
+			} else {
+				if (isMobile){
+					touchX = e.targetTouches[0].pageX;
+					x = touchX - self.offsetLeft;
+				} else x = e.pageX - self.offsetLeft;
+			}
+			
+			var stopper = knobWidth / 2;
+			var m = x - stopper;
+			if (is_down){
+				e.stopPropagation();
+				e.preventDefault();
+				// if(event.preventDefault) event.preventDefault();
+				if (e.returnValue) e.returnValue = false;
+
+				// constraint
+				if (x <= stopper){
+					knob.style.left = '0px';
+					follow.style.width = stopper+'px';
+				} else if (x >= selfWidth-stopper){
+					knob.style.left = (selfWidth-knobWidth)+'px';
+					follow.style.width = (selfWidth-stopper)+'px';
+				} else {
+					knob.style.left = (x-stopper)+'px';
+					follow.style.width = x+'px';
+					if (!settings.snap.onlyOnDrop) doSnap('drag', m);
+				}
+			}
+
+			result = knob.style.left;
+			result = result.replace('px', '');
+
+			// update values
+			if (options.drag && self.getAttribute('data-state') == 'active')
+				options.drag(updateME(getPercent(result)));
+
+			// color change
+			if (colorChangeBln && self.getAttribute('data-state') == 'active')
+				colorChange(getPercent(result));
+		};
+		eventDocumentMouseUp = function(e){
+			is_down = false;
+			if (self.getAttribute('data-state') == 'active'){
+				e = e || event;	// ie fix
+				var x = null, base = 0, selfWidth = self.offsetWidth;
+
+				if (vert){
+					base = self.offsetTop + selfWidth;
+					x = base - ((!isMobile ? e.pageY : touchY)-2);
+				} else x = (!isMobile ? e.pageX : touchX) - self.offsetLeft;
+				
+				var knobWidth	= knob.offsetWidth;
+				var stopper		= knobWidth / 2;
+				var m			= x - stopper;	// true position of knob
 
 				// snap to
-				var snapping_on = false;
-				var snaps = Math.round(settings.snap.points);
-				var snapPctValues = [0];
-				var drawSnapmarks = function(){
-					if (snaps > 0 && snaps < 10){	// min 1, max 9
-						if (snaps === 1) snaps = 2;	// set to min 2
-						
-						// var increment = 100 / (snaps - 1);
-						// pixels
-						var kw = knob.width();
-						var w = self.width() - kw;
-						var increment = w / (snaps - 1);
-						var snapValues = [0];
-						var step = increment;
-						while (step <= w+2){	// added 2px to fix glitch when drawing last mark at 7 or 8 snaps (accounts for decimal)
-							snapValues.push(step);
-							step += increment;
-						}
-						// percentage
-						increment = 100 / (snaps - 1);
-						step = increment;
-						while (step <= 101){	// added 1% to fix glitch when drawing last mark at 7 or 8 snaps (accounts for decimal)
-							snapPctValues.push(step);
-							step += increment;
-						}
+				if (snaps > 0 && snaps < 10 && (settings.snap.onlyOnDrop || settings.snap.hard))	// min 1, max 9
+					result = doSnap('drop', m);
+				else {
+					var mm	= knob.offsetLeft,
+						mq	= selfWidth - knobWidth;
 
-						snapping_on = true;
+					// constraint
+					if (mm <= 0){
+						knob.style.left = '0px';
+						follow.style.width = stopper+'px';
+					} else if (mm >= mq){
+						knob.style.left = mq+'px';
+						follow.style.width = (selfWidth-stopper)+'px';
+					}
 
-						// window resizing support
-						// var markWidth = w / (snaps-1);
-						// markWidth = markWidth / w * 100;
-
-						// markers
-						if (markers){
-							self.after('<div id="'+guid+'_markers"></div>');
-							var marks = $('#'+guid+'_markers');
-							marks.css({
-								'width': settings.width + unit,
-								'margin': 'auto',
-								'padding-left': (!vert ? kw : kw/2)+'px',
-								'-webkit-touch-callout': 'none'
-							}).css(cssContentBox).css(cssUserSelect);
-							for (var i = 0; i < snapValues.length; i++){
-								marks.append('<div style="display:inline-block; width:0; height:5px; border-left:#333 solid 1px; position:relative; left:'+
-									(snapValues[i]-i)+'px; top:-5px"></div>');
-								// window resizing support
-								// marks.append('<div style="display:inline-block; width:'+(i === snapValues.length-1 ? '0' : markWidth+unit)+'; height:5px; border-left:#333 solid 1px; margin-top:-5px"></div>');
-								//$('#'+guid+'_markers').append('<div style="display:inline-block; width:'+increment+'%; height:10px; border-left:#333 solid 1px;"></div>');
-				}}}};
-
-				// -----------
-
-				// vertical
-				if (vert && markers && snaps > 0 && snaps < 10){
-					$('#'+guid+', #'+guid+'_markers').wrapAll('<div class="'+guid+'_vert-marks"></div>');
-					var vmarks = $('.'+guid+'_vert-marks');
-
-					self.attr('data-wrap', 'true');
-
-					vmarks.css({
-						'width': width + unit,
-						'-webkit-backface-visibility': 'hidden',
-						'-moz-backface-visibility': 'hidden',
-						'-ms-backface-visibility': 'hidden',
-						'backface-visibility': 'hidden'
-					}).css(cssContentBox).css(cssRotate);
-					$(vmarks.selector+' > div').css('margin', '0');
-				} else if (vert){
-					// check whether even by even or odd by odd to fix blurred elements
-					var selfW = self.width(), selfH = self.height();
-
-					self.css({
-						'margin': '0',
-						'-webkit-backface-visibility': 'hidden',
-						'-moz-backface-visibility': 'hidden',
-						'-ms-backface-visibility': 'hidden',
-						'backface-visibility': 'hidden'
-					}).css(cssRotate);
+					result = knob.style.left.replace('px', '');
 				}
 
-				// -----------
-
-				// buttons
-				var drawButtons = function(){
-					if (!knobImageLoaded) return false;
-					clearInterval(drawButtons_timer);
-
-					knob_adjust = knob.width() / self.width() * 50;	// leave outside of "if" for keyboard function
-
-					if (settings.buttons){
-						methods.buttons = true;
-
-						var vertStyles = '; z-index:1000; position:relative; top:30px; float:left';
-						if (markers){
-							$((vert ? '.'+guid+'_vert-marks' : self.selector+', #'+guid+'_markers')).wrapAll('<div id="'+guid+'_button-marks" style="display:inline-block; vertical-align:text-top;"></div>');
-							if (vert) $('.'+guid+'_vert-marks').attr('data-wrap', 'true'); else self.attr('data-wrap', 'true');
-							var q = $('#'+guid+'_button-marks');
-							q.after('<div class="sglide-buttons" id="'+guid+'_plus" style="display:inline-block; cursor:pointer'+(vert ? vertStyles : '')+'">&nbsp;+&nbsp;</div>'
-							).before('<div class="sglide-buttons" id="'+guid+'_minus" style="display:inline-block; cursor:pointer'+(vert ? vertStyles : '')+'">&nbsp;&minus;&nbsp;</div>');
-						} else {
-							self.css({
-								'display': 'inline-block',
-								'vertical-align': 'text-bottom'
-							}).after('<div class="sglide-buttons" id="'+guid+'_plus" style="display:inline-block; cursor:pointer'+(vert ? vertStyles : '')+'">&nbsp;+&nbsp;</div>'
-							).before('<div class="sglide-buttons" id="'+guid+'_minus" style="display:inline-block; cursor:pointer'+(vert ? vertStyles : '')+'">&nbsp;&minus;&nbsp;</div>');
-						}
-
-						$('.sglide-buttons').css(cssUserSelect);
-
-						$('#'+guid+'_plus').on(mEvt_down, function(){
-							btn_is_down = true;
-							btnTriggers('>');
-							btn_timers = setTimeout(function(){
-								btnHold('>');
-							}, 1000);
-						}).on(mEvt_up, function(){
-							btnClearAction();
-						});
-						$('#'+guid+'_minus').on(mEvt_down, function(){
-							btn_is_down = true;
-							btnTriggers('<');
-							btn_timers = setTimeout(function(){
-								btnHold('<');
-							}, 1000);
-						}).on(mEvt_up, function(){
-							btnClearAction();
-						});
-					}
-				}, btnTriggers = function(direction, smoothBln){
-					if (smoothBln === undefined) smoothBln = false;
-
-					var set_value = THE_VALUE;
-					if (btn_snap){
-						var intvl = 100 / (settings.snap.points - 1);
-						var p = intvl;
-						for (var i = 0; i < settings.snap.points; i++){
-							if (intvl >= THE_VALUE){
-								if (direction == '>')	THE_VALUE = (Math.round(intvl) > Math.round(THE_VALUE) ? intvl : intvl+p);
-								else					THE_VALUE = intvl-p;
-								break;
-							} else intvl += p;
-						}
-					} else {
-						if (direction == '>')	THE_VALUE+=(smoothBln ? 1 : 10);
-						else					THE_VALUE-=(smoothBln ? 1 : 10);
-					}
-
-					set_value = THE_VALUE;	// leave THE_VALUE out of visual adjustments
-
-					// constraints
-					if ((THE_VALUE+knob_adjust) > 100)	{ THE_VALUE = 100; set_value = 100 - knob_adjust; }
-					else if (THE_VALUE-knob_adjust < 0)	{ THE_VALUE = 0; set_value = 0 + knob_adjust; }
-
-					// gui
-					if (!smoothBln){
-						knob.animate({'left': (set_value-knob_adjust)+'%'}, 200);
-						follow.animate({'width': set_value+'%'}, 200);
-						if (colorChangeBln) setTimeout(function(){colorChange(follow.width());}, 200);
-					} else {
-						knob.css('left', (set_value-knob_adjust)+'%');
-						follow.css('width', set_value+'%');
-						if (colorChangeBln) colorChange(follow.width());
-					}
-
-					// output
-					if (options.onButton) options.onButton({'guid':guid, 'value':THE_VALUE, 'el':self});
-				}, btnHold = function(dir){
-					var btnHold_timer = setInterval(function(){
-						if (btn_is_down) btnTriggers(dir, (btn_snap ? false : true));
-						else clearInterval(btnHold_timer);
-					}, (btn_snap ? 201 : 10));
-				}, btnClearAction = function(){
-					btn_is_down = false;
-					clearTimeout(btn_timers);
-				}, drawButtons_timer = setInterval(drawButtons, 100), knob_adjust = 0, btn_is_down = false, btn_timers = null;
-				var btn_snap = (settings.snap.points > 0 && settings.snap.points <= 9 && (settings.snap.hard || settings.snap.onlyOnDrop));
-
-				//------------------------------------------------------------------------------------------------------------------------------------
-				// function
-
-				// knob
-				var is_down = false;
-
-				knob.on(mEvt_down, function(){
-					is_down = true;
-					self.attr('data-state', 'active');
-				}).on(mEvt_up, function(){
-					is_down = false;
-				});
-
-				// snapping
-				var storedSnapValue = 's-1';
-				var doSnap = function(kind, m){
-					if (snaps > 0 && snaps < 10){	// min 1, max 9
-						var knobWidth = knob.width();
-						var selfWidth = self.width();
-						// var pctFive = selfWidth / 20 + 10;
-						var pctFive = selfWidth * (10-snaps) / 100 - 2;
-
-						// % to px
-						var snapPixelValues = [];
-						for (var i = 0; i < snapPctValues.length; i++){
-							snapPixelValues.push((selfWidth - knobWidth) * snapPctValues[i] / 100);
-							// snapPixelValues.push(snapValues[i] - knobWidth*i);
-						}
-
-						// get closest px mark, and set %
-						var closest = null, pctVal = 0;
-						$.each(snapPixelValues, function(i){
-							if (closest === null || Math.abs(this - m) < Math.abs(closest - m)){
-								closest = this;
-								pctVal = snapPctValues[i];
-							}
-						});
-
-						// physically snap it
-						if (kind == 'drag'){
-							if (settings.snap.hard){
-								knob.css('left', closest+'px');
-								follow.css('width', closest+knobWidth/2+'px');
-								doOnSnap(closest, pctVal);
-							} else {
-								if (Math.round(Math.abs(closest - m)) < pctFive){
-									knob.css('left', closest+'px');
-									follow.css('width', closest+knobWidth/2+'px');
-									doOnSnap(closest, pctVal);
-								} else storedSnapValue = 's-1';
-							}
-						} else {
-							knob.animate({'left': closest+'px'}, 'fast');
-							follow.animate({'width': closest+knobWidth/2+'px'}, 'fast');
-							return closest;
-						}
-					}
-				}, doOnSnap = function(a, b){ // callback: onSnap
-					if (options.onSnap && 's'+a !== storedSnapValue){
-						// var snapPct = a / selfWidth * 100; // (using pctVal instead)
-						storedSnapValue = 's'+a;
-						options.onSnap({'guid':guid, 'value':b, 'el':self});
-					}
-				};
-
-				// keyboard controls
-				if (!mobile){
-					var keycode, keydown = false;
-					$(document).on('keydown.'+guid, function(e){
-						if (!keydown){
-							if (window.event) keycode = window.event.keyCode;
-							else if (e) keycode = e.which;
-
-							if (self.attr('data-keys') == 'true'){
-								if (keycode == 37 || keycode == 40){
-									btn_is_down = true;
-									btnTriggers('<');
-									btn_timers = setTimeout(function(){
-										btnHold('<');
-									}, 1000);
-								} else if (keycode == 39 || keycode == 38){
-									btn_is_down = true;
-									btnTriggers('>');
-									btn_timers = setTimeout(function(){
-										btnHold('>');
-									}, 1000);
-								}
-							}
-							keydown = true;
-						}
-					}).on('keyup.'+guid, function(){
-						keydown = false;
-						btnClearAction();
-					});
-				}
-
-				if (mobile){
-					$(document).on(mEvt_down+'.'+guid, function(e){
-						// is_down = false;
-						touchX = e.originalEvent.touches[0].pageX;
-						touchY = e.originalEvent.touches[0].pageY;
-					});
-				}
-				if (mobile || uAgent.match(/Windows Phone/i)){
-					// orientation
-					$(window).on('orientationchange.'+guid, function(){
-						/*switch (window.orientation){  
-							case -90:
-							case 90:
-								alert('landscape 2');
-								break; 
-							default:
-								alert('portrait 2');
-								break; 
-						}*/
-
-						settings.startAt = THE_VALUE;
-
-						self.sGlide('destroy');	// can't chain here
-						self.sGlide(settings);
-					});
-				}
-				
-				$(document).on(mEvt_move+'.'+guid, function(e){
-					e = e || event;	// ie fix
-					
-					var x = null;
-					if (vert){
-						var base = self.position().top + self.width();
-						if (mobile){
-							touchY = e.originalEvent.touches[0].pageY;
-							x = base - touchY;
-						} else x = base - e.pageY;
-					} else {
-						if (mobile){
-							touchX = e.originalEvent.touches[0].pageX;
-							x = touchX - self.offset().left;
-						} else x = e.pageX - self.offset().left;
-					}
-					
-					var stopper = knob.width() / 2;
-					var m = x - stopper;
-
-					if (is_down){
-						e.stopPropagation();
-						e.preventDefault();
-						// if(event.preventDefault) event.preventDefault();
-						if (e.returnValue) e.returnValue = false;
-
-						// constraint
-						if (x <= stopper){
-							knob.css('left', '0px');
-							follow.css('width', '0px');
-						} else if (x >= self.width()-stopper){
-							knob.css('left', self.width()-knob.width()+'px');
-							follow.css('width', self.width()-(knob.width()/2)+'px');
-						} else {
-							knob.css('left', x-(knob.width()/2)+'px');
-							follow.css('width', x+'px');
-							if (!settings.snap.onlyOnDrop) doSnap('drag', m);
-						}
-					}
-
-					result = knob.css('left');
-					result = result.replace('px', '');
-					// updateME(result);
-					if (options.drag && self.attr('data-state') == 'active') options.drag(updateME(result));
-
-					// color change
-					if (colorChangeBln && self.attr('data-state') == 'active'){
-						colorChange(result);
-					}
-				}).on(mEvt_up+'.'+guid, function(e){
-					is_down = false;
-					if (self.attr('data-state') == 'active'){
-					// if (is_down){
-						// e.stopPropagation();
-						// e.preventDefault();
-						e = e || event;	// ie fix
-						var x = null;
-						if (vert){
-							var base = self.position().top + self.width();
-							x = base - ((!mobile ? e.pageY : touchY)-2);
-						} else x = (!mobile ? e.pageX : touchX) - self.offset().left;
-						var knobWidth = knob.width();
-						var m = x - (knobWidth / 2);	// true position of knob
-
-						// snap to
-						if (snaps > 0 && snaps < 10 && settings.snap.onlyOnDrop)	// min 1, max 9
-							result = doSnap('drop', m);
-						else {
-							// unknown bug: jquery.position() breaks; just too unreliable
-							var mm = null;
-							if (!vert)	mm = knob.offset().left - self.offset().left;
-							else		mm = Math.abs(knob.offset().top + knob.height() - base);
-
-							// constraint
-							if (mm < 0) knob.css('left', '0px');
-							else if (mm > self.width()-knobWidth) knob.css('left', self.width()-knobWidth+'px');
-
-							result = knob.css('left');
-							result = result.replace('px', '');
-						}
-
-						if (options.drop) options.drop(updateME(result));
-						if (options.drag && self.attr('data-state') == 'active') options.drag(updateME(result));
-						self.attr('data-state', 'inactive');
-
-						// color change
-						if (colorChangeBln) colorChange(result);
-					}
-
-					// if button pressed but released off button, clear pending button action
-					if (btn_is_down) btnClearAction();
-				});
-
-				var updateME = function(o){
-					if (self.attr('data-state') == 'active'){
-						o = parseFloat(o, 10);
-						
-						// calculate percentage
-						var percent = o / (self.width() - knob.width()) * 100;
-
-						// update the global value
-						THE_VALUE = percent;
-
-						// return value
-						return {'guid':guid, 'value':percent, 'el':self};
-					}
-				};
+				if (options.drop) options.drop(updateME(getPercent(result)));
+				if (options.drag && self.getAttribute('data-state') == 'active') options.drag(updateME(getPercent(result)));
+				self.setAttribute('data-state', 'inactive');
 
 				// color change
-				var colorChangeBln = false;
-				if (settings.colorStart !== '' && settings.colorEnd !== ''){
-					var borderRadius = 'border-radius: '+(r_corners ? $(this).height() / 2 + 'px 0 0 ' + $(this).height() / 2 + 'px' : '0px');
-					follow.css({
-						'overflow': 'hidden',
-						'background-color': settings.colorStart
-					}).html('<div style="opacity:'+(settings.startAt/100)+'; height:'+self.height()+'px; background-color:'+settings.colorEnd+'; '+borderRadius+'"></div>');
-					colorChangeBln = true;
-				}
-				var colorChange = function(o){
-					follow.find('div').css({
-						'opacity': (parseFloat(o, 10) / (self.width() - knob.width()))
-					});
-				};
+				if (colorChangeBln) colorChange(getPercent(result));
+			}
 
-				// bar
-				var MD = function(e){
-					e = e || event;	// ie fix
-					e.stopPropagation();
-					e.preventDefault();
-					if (e.returnValue) e.returnValue = false;	// wp
+			// if button pressed but released off button, clear button action
+			if (btn_is_down) btnClearAction();
+		};
 
-					is_down = true;
-					self.attr('data-state', 'active');
+		eventWindowResize = function(){
+			that.startAt(startAt);
+			if (markers) drawSnapmarks(true);
+		};
 
-					if (!mobile && !settings.snap.onlyOnDrop){
-						var x = null;
-						if (vert){
-							var base = self.position().top + self.width();
-							x = base - (e.pageY-2);
-						} else x = e.pageX - self.offset().left;
-						var m = x - (knob.width() / 2);	// true position of knob
+		document.addEventListener(mEvt.move, eventDocumentMouseMove);
+		document.addEventListener(mEvt.up, eventDocumentMouseUp);
+		window.addEventListener('resize', eventWindowResize);
 
-						knob.css('left', m+'px');
-						follow.css('width', m+(knob.width()/2)+'px');
-						
-						// constraint
-						if (m < 0) knob.css('left', '0px');
-						else if (m >= self.width()-knob.width()) knob.css('left', self.width()-knob.width()+'px');
-					}
-				};
+		var getPercent = function(o){
+			o = parseFloat(o, 10);
 
-				if (!settings.disabled){
-					self.on(mEvt_down, function(e){ MD(e); });
-					follow.on(mEvt_down, function(e){ MD(e); });
-				}
+			// calculate percentage
+			var pct = o / (self.offsetWidth - knob.offsetWidth) * 100;
+			THE_VALUE = startAt = pct;
 
-				// start at
-				var setStartAt_runTwice = (!imageBln);
-				var setStartAt = function(){
-					var startAt = settings.startAt;
+			return pct;
+		};
 
-					if (startAt <= 0){
-						startAt = 0;
-						knob.css('left', '0px');
-						follow.css('width', '0px');
-					} else if (startAt >= 100){
-						startAt = 100;
-						knob.css('left', self.width()-knob.width()+'px');
-						follow.css('width', self.width()+'px');
-					} else {
-						var pxl = self.width() * startAt / 100;
+		var updateME = function(o){
+			if (self.getAttribute('data-state') == 'active'){
+				return {'id':guid, 'value':o, 'el':self};
+			}
+		};
 
-						if (settings.image != 'none' && settings.image !== ''){
-							knob.children('img').load(function(){
-								knob.css('left', pxl-(knob.width()/2)+'px');
-							});
-						} else knob.css('left', pxl+'px');
-
-						follow.css('width', pxl+'px');
-					}
-
-					//knob.css('left', startAt+'%');
-					var rlt = {'guid':guid, 'value':startAt, 'el':self};
-					if (options.drop) options.drop(rlt);
-					if (options.drag) options.drag(rlt);
-
-					if (setStartAt_runTwice) drawSnapmarks();
-					setStartAt_runTwice = true;
-				};
-				setStartAt();
-
-				// onload
-				if (options.onload){
-					var onload_timer = setInterval(function(){
-						if (knobImageLoaded){
-							options.onload();
-							clearInterval(onload_timer);
-						}
-					}, 100);
-				}
+		// color change
+		var colorShiftInit = function(){
+			var selfHeightHalf = self.offsetHeight / 2;
+			var borderRadius = 'border-radius: '+(r_corners ? selfHeightHalf + 'px 0 0 ' + selfHeightHalf + 'px' : '0px');
+			css(follow, {
+				'overflow': 'hidden',
+				'background-color': settings.colorShift[0]
 			});
+
+			follow.innerHTML = '<div style="opacity:'+(settings.startAt/100)+'; height:100%; background-color:'+settings.colorShift[1]+'; "></div>';
 		}
-	};
-	$.fn.sGlide = function(params){
-		// Method calling logic
-		if (methods[params]){
-			return methods[params].apply(this, Array.prototype.slice.call(arguments, 1));
-		} else if (typeof params === 'object' || !params){
-			return methods.init.apply(this, arguments);
-		} else {
-			$.error('Method '+params+' does not exist on jQuery.sGlide');
+		var colorChange = function(o){
+			css(follow.childNodes[0], {'opacity': ''+(o/100)});
+		};
+
+		var eventBarMouseDown = function(e){
+			e = e || event;	// ie fix
+			if (e.returnValue) e.returnValue = false;	// wp
+
+			is_down = true;
+			self.setAttribute('data-state', 'active');
+
+			if (!isMobile && !settings.snap.onlyOnDrop){
+				var selfWidth = self.offsetWidth;
+				var knobWidth = knob.offsetWidth;
+				var x = null;
+				if (vert){
+					var base = self.offsetTop + selfWidth;
+					x = base - (e.pageY-2);
+				} else x = e.pageX - self.offsetLeft;
+				var m = x - (knobWidth / 2);	// true position of knob
+
+				knob.style.left = m+'px';
+				follow.style.width = m+(knobWidth/2)+'px';
+				
+				// constraint
+				if (m < 0) knob.style.left = '0px';
+				else if (m >= selfWidth-knobWidth) knob.style.left = (selfWidth-knobWidth)+'px';
+			}
+		};
+
+		if (!settings.disabled){
+			self.addEventListener(mEvt.down, eventBarMouseDown);
+			follow.addEventListener(mEvt.down, eventBarMouseDown);
 		}
-	};
-})(jQuery);
+
+		// start at
+		var setStartAt = function(num){
+			startAt = (num) ? num : settings.startAt;
+
+			if (isMobile) css(knob, {'position': 'relative', 'z-index': '999'});	// iPad style patch
+
+			that.startAt(startAt);
+
+			var rlt = {'id':guid, 'value':startAt, 'el':self};
+			if (options.drop) options.drop(rlt);
+			if (options.drag) options.drag(rlt);
+
+			// inits
+			if (snaps > 0 && snaps < 10) drawSnapmarks();
+			if (vert) verticalTransform();
+			if (buttons) drawButtons();
+			if (colorChangeBln){
+				colorShiftInit();
+				colorChange(startAt);
+			}
+		};
+
+		var onload_timer = setInterval(function(){
+			if (imgLoaded){
+				setStartAt(startAt);
+				if (options.onload) options.onload();
+				clearInterval(onload_timer);
+			}
+		}, 1);
+	})(document, this, get);
+}
