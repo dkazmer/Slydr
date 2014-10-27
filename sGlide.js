@@ -7,7 +7,7 @@ created:	24.11.2012
 version:	2.0.0
 
 	version history:
-		2.0.0	major improvements in code structure, stability, accuracy; changed color shift property (see usage) (20.10.2014)
+		2.0.0	major improvements in code structure, stability, accuracy; changed color shift property (see usage); added windows phone support; added retina image handling (20.10.2014)
 		1.10.0	added keyboard functionality (03.01.2014)
 		1.9.1	bug fix: when button is pressed but released off button, button action now gets cleared (19.12.2013)
 		1.9.0	added -/+ buttons, along with the onButton and onload callbacks (18.12.2013)
@@ -24,11 +24,12 @@ version:	2.0.0
 		0.1.0:	created
 
 	usage:
-		apply the following to an empty DIV with a unique id
+		pass an empty DIV, my_element, with a unique id to the following class
 
-		$('#slider').sGlide({
+		var my_sGlide_instance = new sGlide(my_element, {
 			startAt: 60,			// start slider knob at - default: 0
 			image: ''				// string - image path
+			retina: true,			// boolean - larger knob image with suffix @2x for retina displays
 			width: 200,				// integer - default: 100
 			height: 20,				// integer - default: 40
 			unit: 'px',				// 'px' or '%' (default)
@@ -49,17 +50,15 @@ version:	2.0.0
 			}
 		});
 
-		all properties are optional, however, to retrieve value, use the drop or drag callback
-		o.guid returns slider's id
-		o.value returns slider's value
+		all properties are optional, however, to retrieve data, use one of the callbacks
 
-		goals:
-			- if unit is %, then markers should be also
-			- get color shifting to work with the startAt method (start at correct color)
-			- old browsers verticals (IE6/7 - low priority)
-			- fix bug: rebuilding vertical rotates again
-			- range selector
-			- fixes or implementations of these issues: http://stackoverflow.com/search?q=sglide
+	goals:
+		- if unit is %, then markers should be also
+		- get color shifting to work with the startAt method (start at correct color)
+		- old browsers verticals (IE6/7 - low priority)
+		- fix bug: rebuilding vertical rotates again
+		- range selector
+		- fixes or implementations of these issues: http://stackoverflow.com/search?q=sglide
 
 ***********************************************************************************/
 
@@ -69,7 +68,7 @@ function sGlide(self, options){
 		startAt		= 0,
 		img			= '',
 		imgLoaded	= false,
-		mobile		= false,
+		isMobile	= false,
 		buttons		= false,
 		keyCtrl		= false,
 		// events
@@ -83,7 +82,13 @@ function sGlide(self, options){
 		eventWindowResize		= null,
 		eventBarMouseDown		= null,
 		eventPlusMouseUp		= null,
-		eventPlusMouseDown		= null;
+		eventPlusMouseDown		= null,
+		// event states prelim
+		mEvt	= {
+			'down'	: 'mousedown',
+			'up'	: 'mouseup',
+			'move'	: 'mousemove'
+		};
 
 	this.destroy = function(){
 		var guid = self.getAttribute('id');
@@ -98,14 +103,7 @@ function sGlide(self, options){
 		var markers = get('#'+guid+'_markers');
 		if (markers) markers.remove();
 
-		var mEvt = {
-			'down'	: 'mousedown',
-			'up'	: 'mouseup',
-			'move'	: 'mousemove'
-		};
-
-		if (mobile){
-			mEvt.down = 'touchstart'; mEvt.up = 'touchend'; mEvt.move = 'touchmove';
+		if (isMobile){
 			document.removeEventListener(mEvt.down, eventDocumentMouseDown);
 		} else if (keyCtrl){
 			document.removeEventListener('keydown', eventDocumentKeyDown);
@@ -129,6 +127,16 @@ function sGlide(self, options){
 					buttonsContainer.remove();
 				}
 			}
+		}
+
+		// windows phone touch events
+		if (window.navigator.msPointerEnabled){
+			document.removeEventListener(mEvt.msup, eventDocumentMouseUp);
+			document.removeEventListener(mEvt.msmove, eventDocumentMouseMove);
+			self.removeEventListener(mEvt.msdown, eventBarMouseDown);
+			follow.removeEventListener(mEvt.msdown, eventBarMouseDown);
+			knob.removeEventListener(mEvt.msdown, eventKnobMouseDown);
+			knob.removeEventListener(mEvt.msup, eventKnobMouseDown);
 		}
 
 		document.removeEventListener(mEvt.move, eventDocumentMouseMove);
@@ -186,7 +194,6 @@ function sGlide(self, options){
 
 		// append it
 		for (var i = 0; i < elements.length; i++) wrapperEl.appendChild(elements[i]);
-		a.remove();
 	}
 
 	function clone(obj){
@@ -292,18 +299,13 @@ function sGlide(self, options){
 			'colorShift'	: [],
 			'vertical'		: false,
 			'showKnob'		: true,
-			'buttons'		: false
+			'buttons'		: false,
+			'retina'		: true
 		}, options);
 
 		self.removeAttribute('style');	// remove user inline styles
 
-		var isMobile	= false,
-			mEvt		= {
-				'down'	: 'mousedown',
-				'up'	: 'mouseup',
-				'move'	: 'mousemove'
-			},
-			uAgent		= navigator.userAgent;
+		var uAgent = navigator.userAgent;
 
 		if (uAgent.match(/Android/i) ||
 			uAgent.match(/webOS/i) ||
@@ -314,16 +316,14 @@ function sGlide(self, options){
 			uAgent.match(/BlackBerry/i)){
 			isMobile = true;
 			mEvt.down = 'touchstart'; mEvt.up = 'touchend'; mEvt.move = 'touchmove';
-			if (window.navigator.msPointerEnabled){
-				mEvt.down = 'MSPointerDown'; mEvt.up = 'MSPointerUp'; mEvt.move = 'MSPointerMove';
-			}
 			var touchX = null, touchY = null;
 		} else if (uAgent.match(/Windows Phone/i)){
-			// alert('WP');
-			self.addEventListener("MSGestureStart MSGestureChange", function(e){
-				e.preventDefault();
-				return false;
-			});
+			if (window.navigator.msPointerEnabled){
+				css(self, {'-ms-touch-action': 'none'});
+				mEvt.msdown = 'MSPointerDown'; mEvt.msup = 'MSPointerUp'; mEvt.msmove = 'MSPointerMove';
+			} else {
+				mEvt.down = 'touchstart'; mEvt.up = 'touchend'; mEvt.move = 'touchmove';
+			}
 		}
 
 		// variables
@@ -337,7 +337,9 @@ function sGlide(self, options){
 			knob_height		= 'inherit',
 			r_corners		= settings.pill,
 			imageBln		= (settings.image != 'none' && settings.image !== '' && !settings.disabled) ? true : false,
-			colorChangeBln	= (settings.colorShift.length > 1) ? true : false;
+			colorChangeBln	= (settings.colorShift.length > 1) ? true : false,
+			retina			= (window.devicePixelRatio > 1) && settings.retina,
+			MSoffsetTop		= null;
 			
 		keyCtrl				= (self.getAttribute('data-keys') == 'true') ? true : false;
 		buttons				= settings.buttons;
@@ -345,10 +347,27 @@ function sGlide(self, options){
 		if (imageBln){	// if image
 			img = settings.image;
 
+			// retina handling
+			if (retina){
+				var rImgTemp = img.split('.');
+				var rImgTemp_length = rImgTemp.length;
+
+				rImgTemp[rImgTemp_length-2] = rImgTemp[rImgTemp_length-2] + '@2x';
+				img = '';
+				for (var i = 0; i < rImgTemp_length; i++){
+					img += rImgTemp[i] + ((i < rImgTemp_length-1) ? '.' : '');
+				}
+			}
+
 			knob.innerHTML = '<img src="'+img+'" style="visibility:hidden" />';
 			var imgEl = knob.childNodes[0];
 			imgEl.onload = function(){
 				imgLoaded = true;
+
+				if (retina){
+					imgEl.style.width = (imgEl.offsetWidth / 2) + 'px';
+					// imgEl.style.height = (imgEl.offsetHeight / 2) + 'px';
+				}
 				
 				css(knob, {'width': 'auto'});
 
@@ -356,12 +375,15 @@ function sGlide(self, options){
 				knob_width = imgEl.offsetWidth+'px';
 				knob_height = thisHeight+'px';
 				
-				knob_bg = 'url('+img+')';
-				css(knob, {
+				knob_bg = 'url('+img+') no-repeat';
+				var knob_bg_styles = {
 					'width': knob_width,
 					'height': knob_height,
 					'background': knob_bg
-				});
+				};
+				if (retina) knob_bg_styles['background-size'] = '100%';
+
+				css(knob, knob_bg_styles);
 				css(follow, {
 					'height': knob_height,
 					'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0px'
@@ -371,7 +393,7 @@ function sGlide(self, options){
 					'border-radius': r_corners ? thisHeight / 2 + 'px' : '0px'
 				});
 
-				imgEl.remove();
+				imgEl.parentNode.removeChild(imgEl);
 
 				if (thisHeight > settings.height){
 					var knobMarginValue = (thisHeight-settings.height)/2;
@@ -518,8 +540,6 @@ function sGlide(self, options){
 					'; -webkit-backface-visibility:hidden; -moz-backface-visibility:hidden; -ms-backface-visibility:hidden; backface-visibility:hidden"></div>');
 
 				var vmarks = $('#'+guid+'_vert-marks');
-
-				// self.setAttribute('data-wrap', 'true');
 
 				css(self, {'width': '100%'});
 				css(vmarks, clone(cssContentBox), cssPrefixes);
@@ -769,8 +789,11 @@ function sGlide(self, options){
 				selfWidth	= self.offsetWidth,
 				knobWidth	= knob.offsetWidth;
 
+			// MS bug: manually set offsetTop
+			if (window.navigator.msPointerEnabled && MSoffsetTop === null) MSoffsetTop = self.getBoundingClientRect().top;
+
 			if (vert){
-				var base = self.offsetTop + selfWidth;
+				var base = (MSoffsetTop !== null ? MSoffsetTop : self.offsetTop) + selfWidth;
 				if (isMobile){
 					touchY = e.targetTouches[0].pageY;
 					x = base - touchY;
@@ -781,7 +804,7 @@ function sGlide(self, options){
 					x = touchX - self.offsetLeft;
 				} else x = e.pageX - self.offsetLeft;
 			}
-			
+
 			var stopper = knobWidth / 2;
 			var m = x - stopper;
 			if (is_down){
@@ -822,7 +845,8 @@ function sGlide(self, options){
 				var x = null, base = 0, selfWidth = self.offsetWidth;
 
 				if (vert){
-					base = self.offsetTop + selfWidth;
+					// base = self.offsetTop + selfWidth;
+					base = (!window.navigator.msPointerEnabled ? self.offsetTop : self.getBoundingClientRect().top) + selfWidth;
 					x = base - ((!isMobile ? e.pageY : touchY)-2);
 				} else x = (!isMobile ? e.pageX : touchX) - self.offsetLeft;
 				
@@ -898,7 +922,8 @@ function sGlide(self, options){
 			follow.innerHTML = '<div style="opacity:'+(settings.startAt/100)+'; height:100%; background-color:'+settings.colorShift[1]+'; "></div>';
 		}
 		var colorChange = function(o){
-			css(follow.childNodes[0], {'opacity': ''+(o/100)});
+			// css(follow.childNodes[0], {'opacity': ''+(o/100)});
+			follow.childNodes[0].style.opacity = o / 100;
 		};
 
 		var eventBarMouseDown = function(e){

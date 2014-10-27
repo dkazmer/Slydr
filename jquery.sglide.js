@@ -29,6 +29,7 @@ version:	2.0.0
 		$('#slider').sGlide({
 			startAt: 60,			// start slider knob at - default: 0
 			image: ''				// string - image path
+			retina: true,			// boolean - larger knob image with suffix @2x for retina displays
 			width: 200,				// integer - default: 100
 			height: 20,				// integer - default: 40
 			unit: 'px',				// 'px' or '%' (default)
@@ -49,23 +50,25 @@ version:	2.0.0
 			}
 		});
 
-		all properties are optional, however, to retrieve value, use the drop or drag callback
-		o.guid returns slider's id
-		o.value returns slider's value
+		all properties are optional, however, to retrieve data, use one of the callbacks
 
-		goals:
-			- if unit is %, then markers should be also
-			- get color shifting to work with the startAt method (start at correct color)
-			- old browsers verticals (IE6/7 - low priority)
-			- fix bug: rebuilding vertical rotates again
-			- range selector
-			- fixes or implementations of these issues: http://stackoverflow.com/search?q=sglide
+	goals:
+		- if unit is %, then markers should be also
+		- get color shifting to work with the startAt method (start at correct color)
+		- old browsers verticals (IE6/7 - low priority)
+		- fix bug: rebuilding vertical rotates again
+		- range selector
+		- fixes or implementations of these issues: http://stackoverflow.com/search?q=sglide
 
 ***********************************************************************************/
 
 (function($){
-	var valueObj = {};
-	var methods = {
+	var valueObj	= {};
+	var helpers		= {
+		/*'isMobile'	: false,
+		'buttons'	: false*/
+	};
+	var methods		= {
 		destroy: function(){
 			this.each(function(i, el){
 				var self	= $(el);
@@ -88,12 +91,19 @@ version:	2.0.0
 					'move'	: 'mousemove'
 				};
 
-				if (methods.mobile){
+				if (helpers[guid+'-isMobile']){
 					mEvt.down = 'touchstart'; mEvt.up = 'touchend'; mEvt.move = 'touchmove';
+				// windows phone touch events
+				} else if (window.navigator.msPointerEnabled){
+					$(document).off(mEvt.msup, eventDocumentMouseUp);
+					$(document).off(mEvt.msmove, eventDocumentMouseMove);
+					self.off(mEvt.msdown, eventBarMouseDown);
+					self.children('.follow_bar').off(mEvt.msdown, eventBarMouseDown);
+					self.children('.slider_knob').off(mEvt.msdown, eventKnobMouseDown).off(mEvt.msup, eventKnobMouseDown);
 				} else
 					$(document).off('keydown.'+guid).off('keyup.'+guid);
 
-				if (methods.buttons){
+				if (helpers[guid+'-buttons']){
 					$('#'+guid+'_plus').off(mEvt.down).off(mEvt.up);
 					$('#'+guid+'_minus').off(mEvt.down).off(mEvt.up);
 				}
@@ -174,13 +184,14 @@ version:	2.0.0
 					'colorShift'	: [],
 					'vertical'		: false,
 					'showKnob'		: true,
-					'buttons'		: false
+					'buttons'		: false,
+					'retina'		: true
 				}, options);
 
 				self.removeAttr('style');	// remove user inline styles
 
-				var isMobile	= false,
-					mEvt		= {
+				helpers[guid+'-isMobile'] = false;
+				var mEvt		= {
 						'down'	: 'mousedown',
 						'up'	: 'mouseup',
 						'move'	: 'mousemove'
@@ -194,17 +205,19 @@ version:	2.0.0
 					uAgent.match(/iPod/i) ||
 					// uAgent.match(/Windows Phone/i) ||
 					uAgent.match(/BlackBerry/i)){
-					methods.mobile = isMobile = true;
+					helpers[guid+'-isMobile'] = true;
 					mEvt.down = 'touchstart'; mEvt.up = 'touchend'; mEvt.move = 'touchmove';
 					if (window.navigator.msPointerEnabled){
 						mEvt.down = 'MSPointerDown'; mEvt.up = 'MSPointerUp'; mEvt.move = 'MSPointerMove';
 					}
 					var touchX = null, touchY = null;
 				} else if (uAgent.match(/Windows Phone/i)){
-					// alert('WP');
-					self.on("MSGestureStart MSGestureChange", function(e){
-						e.preventDefault();
-					});
+					if (window.navigator.msPointerEnabled){
+						self.css({'-ms-touch-action': 'none'});
+						mEvt.msdown = 'MSPointerDown'; mEvt.msup = 'MSPointerUp'; mEvt.msmove = 'MSPointerMove';
+					} else {
+						mEvt.down = 'touchstart'; mEvt.up = 'touchend'; mEvt.move = 'touchmove';
+					}
 				}
 
 				// variables
@@ -220,28 +233,55 @@ version:	2.0.0
 					imageBln		= (settings.image != 'none' && settings.image !== '' && !settings.disabled),
 					imgLoaded		= false,
 					resize			= false,
-					buttons			= settings.buttons,
 					keyCtrl			= (self.attr('data-keys') == 'true') ? true : false,
-					colorChangeBln	= (settings.colorShift.length > 1) ? true : false;
+					colorChangeBln	= (settings.colorShift.length > 1) ? true : false,
+					isMobile		= helpers[guid+'-isMobile'],
+					retina			= (window.devicePixelRatio > 1) && settings.retina;
+
+				helpers[guid+'-buttons'] = settings.buttons;
 
 				if (imageBln){	// if image
-					methods.img = settings.image;
-					knob.html('<img src="'+settings.image+'" style="visibility:hidden" />');
+					img = settings.image;
+
+					// retina handling
+					if (retina){
+						var rImgTemp = img.split('.');
+						var rImgTemp_length = rImgTemp.length;
+
+						rImgTemp[rImgTemp_length-2] = rImgTemp[rImgTemp_length-2] + '@2x';
+						img = '';
+						for (var i = 0; i < rImgTemp_length; i++){
+							img += rImgTemp[i] + ((i < rImgTemp_length-1) ? '.' : '');
+						}
+					}
+
+					knob.html('<img src="'+img+'" style="visibility:hidden" />');
 					// self_height = 'auto';
 					knob.children('img').load(function(){
 						imgLoaded = true;
+
+						var imgEl = $(this);
+
+						if (retina){
+							imgEl[0].style.width = (imgEl[0].offsetWidth / 2) + 'px';
+							// imgEl.style.height = (imgEl.offsetHeight / 2) + 'px';
+						}
+
 						// $(this).css({'width':'8px', 'position': 'absolute', 'box-sizing': 'content-box'});
 						knob.css('width', 'auto');
-						var thisHeight = $(this).height();
-						knob_width = $(this).width()+'px';
+						var thisHeight = imgEl.height();
+						knob_width = imgEl.width()+'px';
 						knob_height = thisHeight+'px';
-						
-						knob_bg = 'url('+settings.image+')';
-						knob.css({
+
+						knob_bg = 'url('+img+') no-repeat';
+						var knob_bg_styles = {
 							'width': knob_width,
 							'height': knob_height,
 							'background': knob_bg
-						});
+						};
+						if (retina) knob_bg_styles['background-size'] = '100%';
+
+						knob.css(knob_bg_styles);
 						follow.css({
 							'height': knob_height,
 							'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0px'
@@ -251,7 +291,7 @@ version:	2.0.0
 							'border-radius': r_corners ? thisHeight / 2 + 'px' : '0px'
 						});
 
-						$(this).remove();
+						imgEl.remove();
 
 						self.knobMarginValue = 0;
 						if (thisHeight > settings.height){
@@ -418,8 +458,6 @@ version:	2.0.0
 							'; -webkit-backface-visibility:hidden; -moz-backface-visibility:hidden; -ms-backface-visibility:hidden; backface-visibility:hidden"></div>');
 
 						var vmarks = $('#'+guid+'_vert-marks');
-
-						// self.setAttribute('data-wrap', 'true');
 
 						self.css('width', '100%');
 						vmarks.css(cssContentBox).css(cssRotate);
@@ -654,7 +692,7 @@ version:	2.0.0
 				
 				$(document).on(mEvt.move+'.'+guid, function(e){
 					e = e || event;	// ie fix
-			
+
 					var x			= null,
 						knobWidth	= knob.width();
 
@@ -670,7 +708,7 @@ version:	2.0.0
 							x = touchX - self.offset().left;
 						} else x = e.pageX - self.offset().left;
 					}
-					
+
 					var stopper = knobWidth / 2;
 					var m = x - stopper;
 					if (is_down){
@@ -778,7 +816,8 @@ version:	2.0.0
 					follow.html('<div style="opacity:'+(settings.startAt/100)+'; height:100%; background-color:'+settings.colorShift[1]+'; "></div>');
 				}
 				var colorChange = function(o){
-					follow.find('div').css('opacity', ''+(o/100));
+					// follow.find('div').css('opacity', ''+(o/100));
+					follow[0].childNodes[0].style.opacity = o / 100;
 				};
 
 				// bar
@@ -827,7 +866,7 @@ version:	2.0.0
 					// inits
 					if (snaps > 0 && snaps < 10) drawSnapmarks();
 					if (vert) verticalTransform();
-					if (buttons) drawButtons();
+					if (helpers[guid+'-buttons']) drawButtons();
 					if (colorChangeBln){
 						colorShiftInit();
 						colorChange(startAt);
