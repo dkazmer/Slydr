@@ -103,12 +103,13 @@ function sGlide(self, options){
 		// unwrap vertical buttons
 		var vertContainer = get('#'+guid+'_vert-marks');
 		if (vertContainer){
-			vertContainer.parentNode.insertBefore(self, vertContainer.nextSibling);
-			vertContainer.remove();
+			var vertParent = vertContainer.parentNode;
+			vertParent.insertBefore(self, vertContainer.nextSibling);
+			vertParent.removeChild(vertContainer);
 		}
 
 		var markers = get('#'+guid+'_markers');
-		if (markers) markers.remove();
+		if (markers) markers.parentNode.removeChild(markers);
 
 		if (isMobile){
 			document.removeEventListener(mEvt.down, eventDocumentMouseDown);
@@ -120,18 +121,20 @@ function sGlide(self, options){
 		// remove buttons
 		if (buttons){
 			var plus = get('#'+guid+'_plus'), minus = get('#'+guid+'_minus');
+			var buttonsParent = plus.parentNode;
 			plus.removeEventListener(mEvt.up);
 			plus.removeEventListener(mEvt.down);
 			minus.removeEventListener(mEvt.up);
 			minus.removeEventListener(mEvt.down);
-			plus.remove();
-			minus.remove();
+			buttonsParent.removeChild(plus);
+			buttonsParent.removeChild(minus);
 			// unwrap
 			if (!vertContainer){
 				var buttonsContainer = get('#'+guid+'_button-marks');
 				if (buttonsContainer){
-					buttonsContainer.parentNode.insertBefore(buttonsContainer.childNodes[0], buttonsContainer.nextSibling);
-					buttonsContainer.remove();
+					var buttonsContainerParent = buttonsContainer.parentNode;
+					buttonsContainerParent.insertBefore(buttonsContainer.childNodes[0], buttonsContainer.nextSibling);
+					buttonsContainerParent.removeChild(buttonsContainer);
 				}
 			}
 		}
@@ -153,9 +156,9 @@ function sGlide(self, options){
 		self.removeEventListener(mEvt.down, eventBarMouseDown);
 		knob.removeEventListener(mEvt.up, eventKnobMouseUp);
 		knob.removeEventListener(mEvt.down, eventKnobMouseDown);
-		knob.remove();
+		self.removeChild(knob);
 		follow.removeEventListener(mEvt.down, eventBarMouseDown);
-		follow.remove();
+		self.removeChild(follow);
 		self.removeAttribute('style');
 		self.removeAttribute('data-state');
 
@@ -810,6 +813,7 @@ function sGlide(self, options){
 		}
 
 		eventDocumentMouseMove = function(e){
+			if (!is_down) return false;
 			e = e || event;	// ie fix
 
 			var x			= null,
@@ -834,24 +838,20 @@ function sGlide(self, options){
 
 			var stopper = knobWidth / 2;
 			var m = x - stopper;
-			if (is_down){
-				e.stopPropagation();
-				e.preventDefault();
-				// if(event.preventDefault) event.preventDefault();
-				if (e.returnValue) e.returnValue = false;
 
-				// constraint
-				if (x <= stopper){
-					knob.style.left = '0px';
-					follow.style.width = stopper+'px';
-				} else if (x >= selfWidth-stopper){
-					knob.style.left = (selfWidth-knobWidth)+'px';
-					follow.style.width = (selfWidth-stopper)+'px';
-				} else {
-					knob.style.left = (x-stopper)+'px';
-					follow.style.width = x+'px';
-					if (!settings.snap.onlyOnDrop) doSnap('drag', m);
-				}
+			if (e.returnValue) e.returnValue = false;
+
+			// constraint
+			if (x <= stopper){
+				knob.style.left = '0px';
+				follow.style.width = stopper+'px';
+			} else if (x >= selfWidth-stopper){
+				knob.style.left = (selfWidth-knobWidth)+'px';
+				follow.style.width = (selfWidth-stopper)+'px';
+			} else {
+				knob.style.left = (x-stopper)+'px';
+				follow.style.width = x+'px';
+				if (!settings.snap.onlyOnDrop) doSnap('drag', m);
 			}
 
 			result = knob.style.left;

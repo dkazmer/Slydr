@@ -79,6 +79,12 @@ version:	2.0.0
 				var vertContainer = $('#'+guid+'_vert-marks');
 				if (vertContainer[0]) self.unwrap();
 
+				// unwrap buttons marks
+				else {
+					var buttonsContainer = $('#'+guid+'_button-marks');
+					if (buttonsContainer[0]) self.unwrap();
+				}
+
 				// remove buttons
 				if ($('#'+guid+'_plus')[0]) $('#'+guid+'_minus, #'+guid+'_plus').remove();
 
@@ -113,7 +119,7 @@ version:	2.0.0
 				self.off(mEvt.down);
 				self.children('.slider_knob').off(mEvt.up).off(mEvt.down).remove();
 				self.children('.follow_bar').off(mEvt.down).remove();
-				self.removeAttr('style').removeAttr('data-state');
+				self.removeAttr('style');
 			});
 		},
 		startAt: function(pct, animated){
@@ -590,7 +596,7 @@ version:	2.0.0
 
 				knob.on(mEvt.down, function(){
 					is_down = true;
-					self.attr('data-state', 'active');
+					self.data('state', 'active');
 				}).on(mEvt.up, function(){
 					is_down = false;
 				});
@@ -698,7 +704,12 @@ version:	2.0.0
 				}
 				
 				$(document).on(mEvt.move+'.'+guid, function(e){
+					if (!is_down) return false;
+
 					e = e || event;	// ie fix
+
+					// e.stopPropagation();
+					// e.preventDefault();
 
 					var x			= null,
 						knobWidth	= knob.width();
@@ -718,39 +729,39 @@ version:	2.0.0
 
 					var stopper = knobWidth / 2;
 					var m = x - stopper;
-					if (is_down){
-						e.stopPropagation();
-						e.preventDefault();
-						// if(event.preventDefault) event.preventDefault();
-						if (e.returnValue) e.returnValue = false;
 
-						// constraint
-						if (x <= stopper){
-							knob.css('left', '0px');
-							follow.css('width', stopper+'px');
-						} else if (x >= self_width-stopper){
-							knob.css('left', (self_width-knobWidth)+'px');
-							follow.css('width', (self_width-stopper)+'px');
-						} else {
-							knob.css('left', (x-stopper)+'px');
-							follow.css('width', x+'px');
-							if (!settings.snap.onlyOnDrop) doSnap('drag', m);
-						}
+					// if(event.preventDefault) event.preventDefault();
+					if (e.returnValue) e.returnValue = false;
+
+					// constraint & position
+					if (x <= stopper){
+						knob.css('left', '0px');
+						follow.css('width', stopper+'px');
+					} else if (x >= self_width-stopper){
+						knob.css('left', (self_width-knobWidth)+'px');
+						follow.css('width', (self_width-stopper)+'px');
+					} else {
+						knob.css('left', (x-stopper)+'px');
+						follow.css('width', x+'px');
+						if (!settings.snap.onlyOnDrop) doSnap('drag', m);
 					}
 
 					result = knob[0].style.left;	//knob.css('left');
 					result = result.replace('px', '');
 
+					var state = self.data('state');
+
 					// update values
-					if (options.drag && self.attr('data-state') == 'active')
+					if (options.drag && state == 'active')
 						options.drag(updateME(getPercent(result)));
 
 					// color change
-					if (colorChangeBln && self.attr('data-state') == 'active')
+					if (colorChangeBln && state == 'active')
 						colorChange(getPercent(result));
 				}).on(mEvt.up+'.'+guid, function(e){
+					var state = self.data('state');
 					is_down = false;
-					if (self.attr('data-state') == 'active'){
+					if (state == 'active'){
 						e = e || event;	// ie fix
 						var x = null, base = 0;
 
@@ -785,8 +796,8 @@ version:	2.0.0
 						}
 
 						if (options.drop) options.drop(updateME(getPercent(result)));
-						if (options.drag && self.attr('data-state') == 'active') options.drag(updateME(getPercent(result)));
-						self.attr('data-state', 'inactive');
+						if (options.drag && state == 'active') options.drag(updateME(getPercent(result)));
+						self.data('state', 'inactive');
 
 						// color change
 						if (colorChangeBln) colorChange(getPercent(result));
@@ -809,7 +820,7 @@ version:	2.0.0
 				};
 
 				var updateME = function(o){
-					if (self.attr('data-state') == 'active'){
+					if (self.data('state') == 'active'){
 						return {'id':guid, 'value':o, 'el':self};
 					}
 				};
@@ -838,7 +849,7 @@ version:	2.0.0
 					if (e.returnValue) e.returnValue = false;	// wp
 
 					is_down = true;
-					self.attr('data-state', 'active');
+					self.data('state', 'active');
 
 					if (!isMobile && !settings.snap.onlyOnDrop){
 						var x = null;
