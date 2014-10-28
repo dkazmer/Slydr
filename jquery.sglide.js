@@ -149,6 +149,10 @@ version:	2.0.0
 		},
 		init: function(options){
 			this.each(function(i, el){
+
+				//------------------------------------------------------------------------------------------------------------------------------------
+				// build skeleton
+
 				var self	= $(el);
 				var guid	= self.attr('id');
 
@@ -165,7 +169,7 @@ version:	2.0.0
 				var follow	= self.children('.follow_bar');
 
 				//------------------------------------------------------------------------------------------------------------------------------------
-				// form
+				// settings & variables
 
 				var settings = $.extend({
 					'startAt'		: 0,
@@ -240,6 +244,9 @@ version:	2.0.0
 
 				helpers[guid+'-buttons'] = settings.buttons;
 
+				//------------------------------------------------------------------------------------------------------------------------------------
+				// image handling
+
 				if (imageBln){	// if image
 					img = settings.image;
 
@@ -297,8 +304,8 @@ version:	2.0.0
 						if (thisHeight > settings.height){
 							knobMarginValue = (thisHeight-settings.height)/2;
 							self.css({
-								'height': settings.height+'px',
-								'margin-top': knobMarginValue+'px'
+								// 'margin-top': knobMarginValue+'px',
+								'height': settings.height+'px'
 							});
 							knob.css({
 								'top': '-'+knobMarginValue+'px'
@@ -314,19 +321,16 @@ version:	2.0.0
 							// adjust color shifter height
 							follow.find('div').css('height', knob_height);
 						}
-						// setStartAt();
 					});
 				} else {
 					imgLoaded = true;
-					self.css({'border-radius': r_corners ? settings.height / 2 + 'px' : '0px'});
-
-					if (knob.children('img').height() <= settings.height){
-						// children stay inside parent (not working in Chrome)
-						self.css('overflow', 'hidden');
-					} else {
-						follow.css('border-radius', r_corners ? settings.height / 2 + 'px' : '0px');
-					}
+					var d = settings.height / 2;
+					self.css({'border-radius': (r_corners ? d+'px' : '0'), 'overflow': 'hidden'});
+					follow.css('border-radius', (r_corners ? d+'px 0 0 '+d+'px' : '0'));
 				}
+
+				//------------------------------------------------------------------------------------------------------------------------------------
+				// styles
 
 				var unit = settings.unit, width = settings.width;
 				if (unit != 'px' && unit != '%') unit = '%';
@@ -390,6 +394,9 @@ version:	2.0.0
 					'width': '0px',
 					'z-index': '998'
 				}).css(cssContentBox);
+
+				//------------------------------------------------------------------------------------------------------------------------------------
+				// snap marks, buttons, vertical
 
 				// snap to
 				var snapping_on = false;
@@ -576,7 +583,7 @@ version:	2.0.0
 				var btn_snap = (settings.snap.points > 0 && settings.snap.points <= 9 && (settings.snap.hard || settings.snap.onlyOnDrop));
 
 				//------------------------------------------------------------------------------------------------------------------------------------
-				// function
+				// events
 
 				// knob
 				var is_down = false;
@@ -789,6 +796,9 @@ version:	2.0.0
 					if (btn_is_down) btnClearAction();
 				});
 
+				//------------------------------------------------------------------------------------------------------------------------------------
+				// functions
+
 				var getPercent = function(o){
 					o = parseFloat(o, 10);
 					// calculate percentage
@@ -852,8 +862,9 @@ version:	2.0.0
 					follow.on(mEvt.down, function(e){ MD(e); });
 				}
 
-				// -------------------------------------------------------------------------
-				// start at
+				//------------------------------------------------------------------------------------------------------------------------------------
+				// start
+
 				var setStartAt = function(num){
 					startAt = (num) ? num : settings.startAt;
 

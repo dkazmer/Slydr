@@ -63,6 +63,10 @@ version:	2.0.0
 ***********************************************************************************/
 
 function sGlide(self, options){
+
+	//------------------------------------------------------------------------------------------------------------------------------------
+	// global variables
+
 	var knob		= null,
 		follow		= null,
 		startAt		= 0,
@@ -89,6 +93,9 @@ function sGlide(self, options){
 			'up'	: 'mouseup',
 			'move'	: 'mousemove'
 		};
+
+	//------------------------------------------------------------------------------------------------------------------------------------
+	// public methods
 
 	this.destroy = function(){
 		var guid = self.getAttribute('id');
@@ -177,6 +184,9 @@ function sGlide(self, options){
 		return this;
 	};
 
+	//------------------------------------------------------------------------------------------------------------------------------------
+	// private global functions
+
 	function get(id){
 		switch (id[0]){
 			case '#':	return document.getElementById(id.substr(1));
@@ -260,8 +270,15 @@ function sGlide(self, options){
 	}
 
 	(function(document, that, $){
+
+		//------------------------------------------------------------------------------------------------------------------------------------
+		// validate
+
 		if (self instanceof Element === false) throw new Error('sGlide: first param expected object<Element>, found '+(typeof self));
 		if (options instanceof Object === false) throw new Error('sGlide: second param expected object, found '+(typeof options));
+
+		//------------------------------------------------------------------------------------------------------------------------------------
+		// build skeleton
 
 		var guid = self.id;
 
@@ -280,7 +297,7 @@ function sGlide(self, options){
 		}
 
 		//------------------------------------------------------------------------------------------------------------------------------------
-		// form
+		// settings & variables
 
 		var settings = extend({
 			'startAt'		: 0,
@@ -326,7 +343,7 @@ function sGlide(self, options){
 			}
 		}
 
-		// variables
+		// local variables
 		var THE_VALUE		= settings.startAt,
 			result			= 0,
 			vert			= settings.vertical,
@@ -343,6 +360,9 @@ function sGlide(self, options){
 			
 		keyCtrl				= (self.getAttribute('data-keys') == 'true') ? true : false;
 		buttons				= settings.buttons;
+
+		//------------------------------------------------------------------------------------------------------------------------------------
+		// image handling
 
 		if (imageBln){	// if image
 			img = settings.image;
@@ -398,8 +418,8 @@ function sGlide(self, options){
 				if (thisHeight > settings.height){
 					var knobMarginValue = (thisHeight-settings.height)/2;
 					css(self, {
-						'height': settings.height+'px',
-						'margin-top': knobMarginValue+'px'
+						// 'margin-top': knobMarginValue+'px',
+						'height': settings.height+'px'
 					});
 					css(knob, {
 						'top': '-'+knobMarginValue+'px'
@@ -415,14 +435,18 @@ function sGlide(self, options){
 			};
 		} else {
 			imgLoaded = true;
-			css(self, {'border-radius': r_corners ? settings.height / 2 + 'px' : '0px', 'overflow': 'hidden'});
-			css(follow, {'border-radius': (r_corners ? settings.height / 2 + 'px 0 0 '+settings.height / 2 + 'px' : '0px')});
+			var d = settings.height / 2;
+			css(self, {'border-radius': (r_corners ? d+'px' : '0'), 'overflow': 'hidden'});
+			css(follow, {'border-radius': (r_corners ? d+'px 0 0 '+d+'px' : '0')});
 		}
 
 		var unit = settings.unit, width = settings.width;
 		if (unit != 'px' && unit != '%') unit = '%';
 		else if (unit == 'px') width = Math.round(width);
 		else if (unit == '%' && Math.round(width) > 100) width = 100;
+
+		//------------------------------------------------------------------------------------------------------------------------------------
+		// styles
 
 		var cssPrefixes = [
 				'-webkit-',
@@ -470,6 +494,9 @@ function sGlide(self, options){
 		css(follow, clone(cssContentBox), cssPrefixes);
 
 		if (vert) var vertWidth = self.offsetWidth;
+
+		//------------------------------------------------------------------------------------------------------------------------------------
+		// snap marks, buttons, vertical
 
 		// snap to
 		var snapping_on = false;
@@ -667,7 +694,7 @@ function sGlide(self, options){
 		var btn_snap = (settings.snap.points > 0 && settings.snap.points <= 9 && (settings.snap.hard || settings.snap.onlyOnDrop));
 
 		//------------------------------------------------------------------------------------------------------------------------------------
-		// function
+		// events
 
 		// knob
 		var is_down = false;
@@ -894,6 +921,9 @@ function sGlide(self, options){
 		document.addEventListener(mEvt.up, eventDocumentMouseUp);
 		window.addEventListener('resize', eventWindowResize);
 
+		//------------------------------------------------------------------------------------------------------------------------------------
+		// functions
+
 		var getPercent = function(o){
 			o = parseFloat(o, 10);
 
@@ -957,7 +987,9 @@ function sGlide(self, options){
 			follow.addEventListener(mEvt.down, eventBarMouseDown);
 		}
 
-		// start at
+		//------------------------------------------------------------------------------------------------------------------------------------
+		// start
+
 		var setStartAt = function(num){
 			startAt = (num) ? num : settings.startAt;
 
