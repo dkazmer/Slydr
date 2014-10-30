@@ -7,7 +7,7 @@ created:	24.11.2012
 version:	2.0.0
 
 	version history:
-		2.0.0	major improvements in code structure, stability, accuracy; changed color shift property (see usage); added windows phone support; added retina image handling (20.10.2014)
+		2.0.0	major improvements in code structure, stability, accuracy; changed color shift property (see usage); only corresponding arrow keys for horizontal or vertical; added windows phone support; added retina image handling; fixed issues in destroy method; added shift + arrow keys (28.10.2014)
 		1.10.0	added keyboard functionality (03.01.2014)
 		1.9.1	bug fix: when button is pressed but released off button, button action now gets cleared (19.12.2013)
 		1.9.0	added -/+ buttons, along with the onButton and onload callbacks (18.12.2013)
@@ -35,7 +35,7 @@ version:	2.0.0
 			unit: 'px',				// 'px' or '%' (default)
 			pill:					// boolean - default: true
 			snap: {
-				markers		: false,
+				marks		: false,
 				hard		: false,
 				onlyOnDrop	: false,
 				points		: 0
@@ -75,6 +75,7 @@ function sGlide(self, options){
 		isMobile	= false,
 		buttons		= false,
 		keyCtrl		= false,
+		keyCtrlShift= false,
 		// events
 		eventDocumentMouseUp	= null,
 		eventDocumentMouseMove	= null,
@@ -113,7 +114,7 @@ function sGlide(self, options){
 
 		if (isMobile){
 			document.removeEventListener(mEvt.down, eventDocumentMouseDown);
-		} else if (keyCtrl){
+		} else if (keyCtrl || keyCtrlShift){
 			document.removeEventListener('keydown', eventDocumentKeyDown);
 			document.removeEventListener('keyup', eventDocumentKeyUp);
 		}
@@ -241,7 +242,7 @@ function sGlide(self, options){
 		return c;
 	}
 
-	function css(el, styles, prefixes){
+	function css(el, styles, prefixes,e){
 		var existingArr	= (el.getAttribute('style') ? el.getAttribute('style').split(';') : []),
 			existingObj	= {},
 			stl			= null;
@@ -275,7 +276,7 @@ function sGlide(self, options){
 	(function(document, that, $){
 
 		//------------------------------------------------------------------------------------------------------------------------------------
-		// validate
+		// validate params
 
 		if (self instanceof Element === false) throw new Error('sGlide: first param expected object<Element>, found '+(typeof self));
 		if (options instanceof Object === false) throw new Error('sGlide: second param expected object, found '+(typeof options));
@@ -310,7 +311,7 @@ function sGlide(self, options){
 			'unit'			: '%',	// 'px' or '%'
 			'pill'			: true,
 			'snap'			: {
-				'markers'	: false,
+				'marks'		: false,
 				'hard'		: false,
 				'onlyOnDrop': false,
 				'points'	: 0
@@ -350,18 +351,20 @@ function sGlide(self, options){
 		var THE_VALUE		= settings.startAt,
 			result			= 0,
 			vert			= settings.vertical,
-			markers			= (settings.snap.points > 0 && settings.snap.points <= 9 && settings.snap.markers),
+			markers			= (settings.snap.points > 0 && settings.snap.points <= 9 && settings.snap.marks),
 			knob_bg			= '#333',
-			knob_width		= (settings.showKnob ? '2%' : '0'),
+			knob_width		= (settings.showKnob && !settings.disabled ? '2%' : '0'),
 			self_height		= Math.round(settings.height)+'px',
 			knob_height		= 'inherit',
 			r_corners		= settings.pill,
 			imageBln		= (settings.image != 'none' && settings.image !== '' && !settings.disabled) ? true : false,
 			colorChangeBln	= (settings.colorShift.length > 1) ? true : false,
 			retina			= (window.devicePixelRatio > 1) && settings.retina,
-			MSoffsetTop		= null;
+			MSoffsetTop		= null,
+			vmarks			= null;
 			
 		keyCtrl				= (self.getAttribute('data-keys') == 'true') ? true : false;
+		keyCtrlShift		= (self.getAttribute('data-keys') == 'shift') ? true : false;
 		buttons				= settings.buttons;
 
 		//------------------------------------------------------------------------------------------------------------------------------------
@@ -391,22 +394,22 @@ function sGlide(self, options){
 					imgEl.style.width = (imgEl.offsetWidth / 2) + 'px';
 					// imgEl.style.height = (imgEl.offsetHeight / 2) + 'px';
 				}
-				
-				css(knob, {'width': 'auto'});
 
+				// determine knob image style requirements
 				var thisHeight = imgEl.offsetHeight;
 				knob_width = imgEl.offsetWidth+'px';
 				knob_height = thisHeight+'px';
-				
 				knob_bg = 'url('+img+') no-repeat';
-				var knob_bg_styles = {
-					'width': knob_width,
-					'height': knob_height,
-					'background': knob_bg
-				};
-				if (retina) knob_bg_styles['background-size'] = '100%';
 
-				css(knob, knob_bg_styles);
+				// apply knob image styles
+				knob.style.width = knob_width;
+				knob.style.height = knob_height;
+				setTimeout(function(){
+					knob.style.background = knob_bg;
+					if (retina) knob.style.backgroundSize = '100%';
+				}, 0);
+
+				// set bar styles
 				css(follow, {
 					'height': knob_height,
 					'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0px'
@@ -416,8 +419,9 @@ function sGlide(self, options){
 					'border-radius': r_corners ? thisHeight / 2 + 'px' : '0px'
 				});
 
-				imgEl.parentNode.removeChild(imgEl);
+				knob.removeChild(imgEl);
 
+				// bar height less than that of knob
 				if (thisHeight > settings.height){
 					var knobMarginValue = (thisHeight-settings.height)/2;
 					css(self, {
@@ -443,13 +447,14 @@ function sGlide(self, options){
 			css(follow, {'border-radius': (r_corners ? d+'px 0 0 '+d+'px' : '0')});
 		}
 
+		//------------------------------------------------------------------------------------------------------------------------------------
+		// styles
+
+		// validate some user settings
 		var unit = settings.unit, width = settings.width;
 		if (unit != 'px' && unit != '%') unit = '%';
 		else if (unit == 'px') width = Math.round(width);
 		else if (unit == '%' && Math.round(width) > 100) width = 100;
-
-		//------------------------------------------------------------------------------------------------------------------------------------
-		// styles
 
 		var cssPrefixes = [
 				'-webkit-',
@@ -485,7 +490,7 @@ function sGlide(self, options){
 			'font-size': '0',
 			'position': 'relative',
 			'z-index': '999'
-		});
+		}, null, 'knobby');
 		css(knob, clone(cssContentBox), cssPrefixes);
 
 		css(follow, {
@@ -569,7 +574,7 @@ function sGlide(self, options){
 				wrapAll(a, '<div id="'+guid+'_vert-marks" style="margin:0; z-index:997; width:'+width+unit+
 					'; -webkit-backface-visibility:hidden; -moz-backface-visibility:hidden; -ms-backface-visibility:hidden; backface-visibility:hidden"></div>');
 
-				var vmarks = $('#'+guid+'_vert-marks');
+				vmarks = $('#'+guid+'_vert-marks');
 
 				css(self, {'width': '100%'});
 				css(vmarks, clone(cssContentBox), cssPrefixes);
@@ -764,15 +769,20 @@ function sGlide(self, options){
 		};
 
 		// keyboard controls
-		if (!isMobile && keyCtrl){
+		if (!isMobile && (keyCtrl || keyCtrlShift)){
 			var keycode, keydown = false,
 				codeBack	= (vert) ? 40 : 37,
 				codeFwd		= (vert) ? 38 : 39;
 
 			eventDocumentKeyDown = function(e){
 				if (!keydown && !settings.disabled){
-					if (window.event) keycode = window.event.keyCode;
-					else if (e) keycode = e.which;
+					if (window.event){
+						keycode = window.event.keyCode;
+						if (keyCtrlShift && !window.event.shiftKey) return false;
+					} else if (e){
+						keycode = e.which;
+						if (keyCtrlShift && !e.shiftKey) return false;
+					}
 
 					if (keycode == codeBack){
 						btn_is_down = true;
@@ -780,14 +790,15 @@ function sGlide(self, options){
 						btn_timers = setTimeout(function(){
 							btnHold('<');
 						}, 500);
+						keydown = true;
 					} else if (keycode == codeFwd){
 						btn_is_down = true;
 						btnTriggers('>');
 						btn_timers = setTimeout(function(){
 							btnHold('>');
 						}, 500);
+						keydown = true;
 					}
-					keydown = true;
 				}
 			};
 			eventDocumentKeyUp = function(){
@@ -820,10 +831,11 @@ function sGlide(self, options){
 				selfWidth	= self.offsetWidth,
 				knobWidth	= knob.offsetWidth;
 
-			// MS bug: manually set offsetTop
-			if (window.navigator.msPointerEnabled && MSoffsetTop === null) MSoffsetTop = self.getBoundingClientRect().top;
-
 			if (vert){
+				// MS bug: manually set offsetTop, otherwise try to get the vertical wrapper's offsetTop
+				if (window.navigator.msPointerEnabled && MSoffsetTop === null) MSoffsetTop = self.getBoundingClientRect().top;
+				else if (vmarks !== null && MSoffsetTop === null) MSoffsetTop = vmarks.offsetTop;
+
 				var base = (MSoffsetTop !== null ? MSoffsetTop : self.offsetTop) + selfWidth;
 				if (isMobile){
 					touchY = e.targetTouches[0].pageY;
@@ -967,8 +979,15 @@ function sGlide(self, options){
 				var selfWidth = self.offsetWidth;
 				var knobWidth = knob.offsetWidth;
 				var x = null;
+
+
 				if (vert){
-					var base = self.offsetTop + selfWidth;
+					// MS bug: manually set offsetTop, otherwise try to get the vertical wrapper's offsetTop
+					if (window.navigator.msPointerEnabled && MSoffsetTop === null) MSoffsetTop = self.getBoundingClientRect().top;
+					else if (vmarks !== null && MSoffsetTop === null) MSoffsetTop = vmarks.offsetTop;
+
+					var base = (MSoffsetTop !== null ? MSoffsetTop : self.offsetTop) + selfWidth;
+					// var base = self.offsetTop + selfWidth;
 					x = base - (e.pageY-2);
 				} else x = e.pageX - self.offsetLeft;
 				var m = x - (knobWidth / 2);	// true position of knob
@@ -993,8 +1012,6 @@ function sGlide(self, options){
 		var setStartAt = function(num){
 			startAt = (num) ? num : settings.startAt;
 
-			if (isMobile) css(knob, {'position': 'relative', 'z-index': '999'});	// iPad style patch
-
 			that.startAt(startAt);
 
 			var rlt = {'id':guid, 'value':startAt, 'el':self};
@@ -1013,9 +1030,9 @@ function sGlide(self, options){
 
 		var onload_timer = setInterval(function(){
 			if (imgLoaded){
+				clearInterval(onload_timer);
 				setStartAt(startAt);
 				if (options.onload) options.onload();
-				clearInterval(onload_timer);
 			}
 		}, 1);
 	})(document, this, get);

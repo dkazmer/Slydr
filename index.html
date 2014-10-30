@@ -20,8 +20,8 @@
 #slider1_vert-marks {margin-left: 60px !important;}
 </style>
 
-<!-- <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script> -->
-<!-- <script type="text/javascript" src="jquery.sglide.js"></script> -->
+<!-- <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script type="text/javascript" src="jquery.sglide.js"></script> -->
 <script type="text/javascript" src="sglide.js"></script>
 <!-- <script type="text/javascript" src="../../~web~/sGlide/jquery.sglide.2.min.js"></script> -->
 <!-- <script type="text/javascript" src="../../~web~/sGlide/sglide.2.min.js"></script> -->
@@ -40,13 +40,13 @@
 				'image': 'img/knob_.png',
 				// 'pill': false,
 				'snap': {
-					'markers': true,
+					'marks': true,
 					// 'hard': true,
 					'points': 6
 				},
 				'colorShift': ['#3a4d31', '#7bb560'],
-				// 'vertical': true,
-				'buttons': true,
+				'vertical': true,
+				// 'buttons': true,
 				// 'disabled': true,
 				drag: function(o){
 					console.log(o.id,o.value);
@@ -63,16 +63,17 @@
 		/*$('.slider_bar').sGlide({
 			'startAt': 30,
 			'width': 700,
+			// 'height': 20,
 			'unit': 'px',
 			'image': 'img/knob_.png',
 			// 'pill': false,
 			'snap': {
-				'markers': true,
-				'onlyOnDrop': true,
+				'marks': true,
+				// 'onlyOnDrop': true,
 				'points': 6
 			},
 			'colorShift': ['#3a4d31', '#7bb560'],
-			// 'vertical': true,
+			'vertical': true,
 			'buttons': true,
 			// 'disabled': true,
 			drag: function(o){
@@ -83,27 +84,13 @@
 				console.log(o.id,o.value);
 			}
 		});*/
-
-		/*$('#slider2').sGlide({
-			'startAt': 50,
-			'flat': true,
-			'width': 300,
-			'unit': 'px',
-			'snap': {
-				'points': 5,
-				'markers': true,
-				'onlyOnDrop': true
-			},
-			'vertical': true,
-			'showKnob': false
-		});*/
 	};
 </script>
 
 </head><body onload="run()">
 
 	<div id="percent">%</div>
-	<div id="slider1" class="slider_bar" data-keys="true" style="background-color:#069; border-radius:10px; height:40px"></div><br /><div id="slider2" class="slider_bar"></div>
+	<div id="slider1" class="slider_bar" data-keys="shift" style="background-color:#069; border-radius:10px; height:40px"></div><br /><div id="slider2" class="slider_bar"></div>
 	<!-- <br />
 
 	<div class="sample sample2">

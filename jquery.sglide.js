@@ -7,7 +7,7 @@ created:	24.11.2012
 version:	2.0.0
 
 	version history:
-		2.0.0	major improvements in code structure, stability, accuracy; changed color shift property (see usage); only corresponding arrow keys for horizontal or vertical (20.10.2014)
+		2.0.0	major improvements in code structure, stability, accuracy; changed color shift property (see usage); only corresponding arrow keys for horizontal or vertical; added windows phone support; added retina image handling; fixed issues in destroy method; added shift + arrow keys (30.10.2014)
 		1.10.0	added keyboard functionality (03.01.2014)
 		1.9.1	bug fix: when button is pressed but released off button, button action now gets cleared (19.12.2013)
 		1.9.0	added -/+ buttons, along with the onButton and onload callbacks (18.12.2013)
@@ -35,7 +35,7 @@ version:	2.0.0
 			unit: 'px',				// 'px' or '%' (default)
 			pill:					// boolean - default: true
 			snap: {
-				markers		: false,
+				marks		: false,
 				hard		: false,
 				onlyOnDrop	: false,
 				points		: 0
@@ -185,7 +185,7 @@ version:	2.0.0
 					'unit'			: '%',	// 'px' or '%'
 					'pill'			: true,
 					'snap'			: {
-						'markers'	: false,
+						'marks'		: false,
 						'hard'		: false,
 						'onlyOnDrop': false,
 						'points'	: 0
@@ -234,9 +234,9 @@ version:	2.0.0
 				valueObj[guid]		= settings.startAt;
 				var result			= 0,
 					vert			= settings.vertical,
-					markers			= (settings.snap.points > 0 && settings.snap.points <= 9 && settings.snap.markers),
+					markers			= (settings.snap.points > 0 && settings.snap.points <= 9 && settings.snap.marks),
 					knob_bg			= '#333',
-					knob_width		= (settings.showKnob ? '2%' : '0'),
+					knob_width		= (settings.showKnob && !settings.disabled ? '2%' : '0'),
 					knob_height		= 'inherit',
 					self_height		= Math.round(settings.height)+'px',
 					r_corners		= settings.pill,
@@ -244,6 +244,7 @@ version:	2.0.0
 					imgLoaded		= false,
 					resize			= false,
 					keyCtrl			= (self.attr('data-keys') == 'true') ? true : false,
+					keyCtrlShift	= (self.attr('data-keys') == 'shift') ? true : false,
 					colorChangeBln	= (settings.colorShift.length > 1) ? true : false,
 					isMobile		= helpers[guid+'-isMobile'],
 					retina			= (window.devicePixelRatio > 1) && settings.retina;
@@ -268,7 +269,7 @@ version:	2.0.0
 						}
 					}
 
-					knob.html('<img src="'+img+'" style="visibility:hidden" />');
+					knob.html('<img src="'+img+'" style="visibility:hidden; position:absolute" />');
 					// self_height = 'auto';
 					knob.children('img').load(function(){
 						imgLoaded = true;
@@ -280,10 +281,9 @@ version:	2.0.0
 							// imgEl.style.height = (imgEl.offsetHeight / 2) + 'px';
 						}
 
-						// $(this).css({'width':'8px', 'position': 'absolute', 'box-sizing': 'content-box'});
-						knob.css('width', 'auto');
-						var thisHeight = imgEl.height();
-						knob_width = imgEl.width()+'px';
+						// knob.css('width', 'auto');
+						var thisHeight = imgEl[0].naturalHeight;
+						knob_width = imgEl[0].naturalWidth+'px';
 						knob_height = thisHeight+'px';
 
 						knob_bg = 'url('+img+') no-repeat';
@@ -338,6 +338,7 @@ version:	2.0.0
 				//------------------------------------------------------------------------------------------------------------------------------------
 				// styles
 
+				// validate some user settings
 				var unit = settings.unit, width = settings.width;
 				if (unit != 'px' && unit != '%') unit = '%';
 				else if (unit == 'px') width = Math.round(width);
@@ -660,15 +661,20 @@ version:	2.0.0
 					if (markers) drawSnapmarks(true);
 				};
 
-				if (!isMobile && keyCtrl){
+				if (!isMobile && (keyCtrl || keyCtrlShift)){
 					var keycode, keydown = false,
 						codeBack	= (vert) ? 40 : 37,
 						codeFwd		= (vert) ? 38 : 39;
 
 					$(document).on('keydown.'+guid, function(e){
 						if (!keydown && !settings.disabled){
-							if (window.event) keycode = window.event.keyCode;
-							else if (e) keycode = e.which;
+							if (window.event){
+								keycode = window.event.keyCode;
+								if (keyCtrlShift && !window.event.shiftKey) return false;
+							} else if (e){
+								keycode = e.which;
+								if (keyCtrlShift && !e.shiftKey) return false;
+							}
 
 							if (keycode == codeBack){
 								btn_is_down = true;
@@ -676,14 +682,15 @@ version:	2.0.0
 								btn_timers = setTimeout(function(){
 									btnHold('<');
 								}, 500);
+								keydown = true;
 							} else if (keycode == codeFwd){
 								btn_is_down = true;
 								btnTriggers('>');
 								btn_timers = setTimeout(function(){
 									btnHold('>');
 								}, 500);
+								keydown = true;
 							}
-							keydown = true;
 						}
 					}).on('keyup.'+guid, function(){
 						keydown = false;
@@ -897,9 +904,9 @@ version:	2.0.0
 
 				var onload_timer = setInterval(function(){
 					if (imgLoaded){
+						clearInterval(onload_timer);
 						setStartAt(valueObj[guid]);
 						if (options.onload) options.onload();
-						clearInterval(onload_timer);
 					}
 				}, 1);
 			});
