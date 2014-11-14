@@ -17,73 +17,77 @@
 /*#slider1 {transform-origin: 460px 260px !important;}*/
 /*#slider2 {margin: -130px -290px !important;}*/
 /*#slider1 {margin-left: 60px !important;}*/
+/*.follow_bar {background-color: #960;}*/
 #slider1_vert-marks {margin-left: 60px !important;}
 </style>
 
-<!-- <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
-<script type="text/javascript" src="jquery.sglide.js"></script> -->
-<script type="text/javascript" src="sglide.js"></script>
+<script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script type="text/javascript" src="jquery.sglide.js"></script>
+<!-- <script type="text/javascript" src="sglide.js"></script> -->
 <!-- <script type="text/javascript" src="../../~web~/sGlide/jquery.sglide.2.min.js"></script> -->
 <!-- <script type="text/javascript" src="../../~web~/sGlide/sglide.2.min.js"></script> -->
 
 <script type="text/javascript">
 	function run(){
-		sglideArr = [];
+		/*sglideArr = [];
 		var elsArr = document.getElementsByClassName('slider_bar');
 
 		for (var i = 0; i < elsArr.length; i++) {
 			sglideArr.push(new sGlide(elsArr[i], {
 				'startAt': 30,
 				// 'height': 20,
-				'width': 700,
+				'width': 600,
 				'unit': 'px',
 				'image': 'img/knob_.png',
 				// 'pill': false,
 				'snap': {
 					'marks': true,
-					// 'hard': true,
+					// 'type': 'soft',
 					'points': 6
 				},
 				'colorShift': ['#3a4d31', '#7bb560'],
-				'vertical': true,
-				// 'buttons': true,
+				// 'vertical': true,
+				'buttons': true,
+				'totalRange': [58,102],
 				// 'disabled': true,
-				drag: function(o){
-					console.log(o.id,o.value);
-					document.getElementById('percent').innerHTML = o.id+': '+Math.round(o.value) + '%';
+				drop: function(o){
+					console.log('> drop',o);
+					// console.log(o.id,o.value, this.element);
+					// document.getElementById('percent').innerHTML = o.id+': '+Math.round(o.value) + '%';
 				},
-				onButton: function(o){
-					console.log(o.id,o.value);
+				onSnap: function(o){
+					console.log('> snap',o);
 				}
-			}).startAt(40*(i+1)));
+			}));
 		}
 
-		console.log('sglideArr',sglideArr);
+		console.log('sglideArr',sglideArr);*/
 
-		/*$('.slider_bar').sGlide({
-			'startAt': 30,
-			'width': 700,
-			// 'height': 20,
+		$('.slider_bar').sGlide({
+			'startAt': 40,
+			'width': 600,
+			// 'height': 22,
 			'unit': 'px',
 			'image': 'img/knob_.png',
 			// 'pill': false,
+			'totalRange': [58,102],
+			// 'locked': true,
 			'snap': {
 				'marks': true,
-				// 'onlyOnDrop': true,
-				'points': 6
+				// 'type': 'soft',
+				'points': 3
 			},
 			'colorShift': ['#3a4d31', '#7bb560'],
-			'vertical': true,
+			// 'vertical': true,
 			'buttons': true,
 			// 'disabled': true,
 			drag: function(o){
-				console.log(o.id,o.value);
-				document.getElementById('percent').innerHTML = o.id+': '+Math.round(o.value) + '%';
+				// console.log('> drag',o);//,o.id,o);
 			},
 			onButton: function(o){
-				console.log(o.id,o.value);
+				console.log('> onButton',o);//,o.id,o);
 			}
-		});*/
+		});
 	};
 </script>
 
@@ -91,17 +95,5 @@
 
 	<div id="percent">%</div>
 	<div id="slider1" class="slider_bar" data-keys="shift" style="background-color:#069; border-radius:10px; height:40px"></div><br /><div id="slider2" class="slider_bar"></div>
-	<!-- <br />
-
-	<div class="sample sample2">
-		<p><b>example 2</b>: Smart snapping, with optional markers</p>
-		<div style="height:60px"><div id="slider2_"></div></div>
-		<div id="snap-options">
-			<input type="radio" name="snap" id="snap-true" onclick="" checked="checked" /> <label for="snap-true">true snap</label>
-			<input type="radio" name="snap" id="snap-hard" onclick="" /> <label for="snap-hard">hard snap</label>
-			<input type="radio" name="snap" id="snap-drop" onclick="" /> <label for="snap-drop">snap only on drop</label>
-			<input type="radio" name="snap" id="snap-nomarks" onclick="" /> <label for="snap-nomarks" style="margin-right:0">no markers</label>
-		</div>
-	</div> -->
 
 </body></html>

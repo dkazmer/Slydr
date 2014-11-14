@@ -36,8 +36,7 @@ version:	2.0.0
 			pill:					// boolean - default: true
 			snap: {
 				marks		: false,
-				hard		: false,
-				onlyOnDrop	: false,
+				type		: false,
 				points		: 0
 			},
 			disabled:				// boolean - default: false
@@ -67,15 +66,16 @@ function sGlide(self, options){
 	//------------------------------------------------------------------------------------------------------------------------------------
 	// global variables
 
-	var knob		= null,
-		follow		= null,
-		startAt		= 0,
-		img			= '',
-		imgLoaded	= false,
-		isMobile	= false,
-		buttons		= false,
-		keyCtrl		= false,
-		keyCtrlShift= false,
+	var knob			= null,
+		follow			= null,
+		startAt			= 0,
+		img				= '',
+		imgLoaded		= false,
+		isMobile		= false,
+		buttons			= false,
+		keyCtrl			= false,
+		keyCtrlShift	= false,
+		colorChangeBln	= false,
 		// events
 		eventDocumentMouseUp	= null,
 		eventDocumentMouseMove	= null,
@@ -86,14 +86,17 @@ function sGlide(self, options){
 		eventKnobMouseDown		= null,
 		eventWindowResize		= null,
 		eventBarMouseDown		= null,
-		eventPlusMouseUp		= null,
+		eventPlusMinusMouseUp	= null,
 		eventPlusMouseDown		= null,
+		eventMinusMouseDown		= null,
 		// event states prelim
 		mEvt	= {
 			'down'	: 'mousedown',
 			'up'	: 'mouseup',
 			'move'	: 'mousemove'
 		};
+
+	this.element = self;
 
 	//------------------------------------------------------------------------------------------------------------------------------------
 	// public methods
@@ -123,10 +126,10 @@ function sGlide(self, options){
 		if (buttons){
 			var plus = get('#'+guid+'_plus'), minus = get('#'+guid+'_minus');
 			var buttonsParent = plus.parentNode;
-			plus.removeEventListener(mEvt.up);
-			plus.removeEventListener(mEvt.down);
-			minus.removeEventListener(mEvt.up);
-			minus.removeEventListener(mEvt.down);
+			plus.removeEventListener(mEvt.up, eventPlusMinusMouseUp);
+			plus.removeEventListener(mEvt.down, eventPlusMouseDown);
+			minus.removeEventListener(mEvt.up, eventPlusMinusMouseUp);
+			minus.removeEventListener(mEvt.down, eventMinusMouseDown);
 			buttonsParent.removeChild(plus);
 			buttonsParent.removeChild(minus);
 			// unwrap
@@ -184,6 +187,10 @@ function sGlide(self, options){
 		// gui
 		knob.style.left = pxAdjust+'px';
 		follow.style.width = px+'px';
+
+		// color shifting
+		if (colorChangeBln)
+			follow.children[0].style.opacity = pct / 100;
 
 		return this;
 	};
@@ -292,12 +299,12 @@ function sGlide(self, options){
 		// add assets
 		self.innerHTML = '<div class="follow_bar"></div><div class="slider_knob"></div>';
 
-		if (self.childNodes[0].className == 'slider_knob'){
-			knob = self.childNodes[0];
-			follow = self.childNodes[1];
+		if (self.children[0].className == 'slider_knob'){
+			knob = self.children[0];
+			follow = self.children[1];
 		} else {
-			knob = self.childNodes[1];
-			follow = self.childNodes[0];
+			knob = self.children[1];
+			follow = self.children[0];
 		}
 
 		//------------------------------------------------------------------------------------------------------------------------------------
@@ -312,8 +319,9 @@ function sGlide(self, options){
 			'pill'			: true,
 			'snap'			: {
 				'marks'		: false,
-				'hard'		: false,
-				'onlyOnDrop': false,
+				'type'		: false,
+				// 'hard'		: false,
+				// 'onlyOnDrop': false,
 				'points'	: 0
 			},
 			'disabled'		: false,
@@ -321,6 +329,7 @@ function sGlide(self, options){
 			'vertical'		: false,
 			'showKnob'		: true,
 			'buttons'		: false,
+			'totalRange'	: [0,0],
 			'retina'		: true
 		}, options);
 
@@ -348,21 +357,23 @@ function sGlide(self, options){
 		}
 
 		// local variables
-		var THE_VALUE		= settings.startAt,
+		var THE_VALUE		= startAt = settings.startAt,
 			result			= 0,
 			vert			= settings.vertical,
 			markers			= (settings.snap.points > 0 && settings.snap.points <= 9 && settings.snap.marks),
+			snapType		= (settings.snap.type != 'hard' && settings.snap.type != 'soft') ? false : settings.snap.type,
 			knob_bg			= '#333',
 			knob_width		= (settings.showKnob && !settings.disabled ? '2%' : '0'),
 			self_height		= Math.round(settings.height)+'px',
 			knob_height		= 'inherit',
 			r_corners		= settings.pill,
 			imageBln		= (settings.image != 'none' && settings.image !== '' && !settings.disabled) ? true : false,
-			colorChangeBln	= (settings.colorShift.length > 1) ? true : false,
 			retina			= (window.devicePixelRatio > 1) && settings.retina,
+			customRange		= (settings.totalRange[0] !== 0 || settings.totalRange[1] !== 0) && settings.totalRange[0] < settings.totalRange[1],
 			MSoffsetTop		= null,
 			vmarks			= null;
 			
+		colorChangeBln		= (settings.colorShift.length > 1) ? true : false;
 		keyCtrl				= (self.getAttribute('data-keys') == 'true') ? true : false;
 		keyCtrlShift		= (self.getAttribute('data-keys') == 'shift') ? true : false;
 		buttons				= settings.buttons;
@@ -412,11 +423,11 @@ function sGlide(self, options){
 				// set bar styles
 				css(follow, {
 					'height': knob_height,
-					'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0px'
+					'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0'
 				});
 				css(self, {
 					'height': knob_height,
-					'border-radius': r_corners ? thisHeight / 2 + 'px' : '0px'
+					'border-radius': r_corners ? thisHeight / 2 + 'px' : '0'
 				});
 
 				knob.removeChild(imgEl);
@@ -433,7 +444,7 @@ function sGlide(self, options){
 					});
 					css(follow, {
 						'height': settings.height+'px',
-						'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0px'
+						'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0'
 					});
 				} else {
 					// children stay inside parent
@@ -489,15 +500,14 @@ function sGlide(self, options){
 			'display': (!settings.disabled ? 'inline-block' : 'none'),
 			'font-size': '0',
 			'position': 'relative',
-			'z-index': '999'
+			'z-index': '1'
 		}, null, 'knobby');
 		css(knob, clone(cssContentBox), cssPrefixes);
 
 		css(follow, {
 			'position': (!settings.disabled ? 'absolute' : 'static'),	// static when 'disabled' for self.overflow.hidden to work in Chrome
 			'height': 'inherit',//knob.offsetHeight+'px',
-			'width': '0',
-			'z-index': '998'
+			'width': '0'
 		});
 		css(follow, clone(cssContentBox), cssPrefixes);
 
@@ -633,22 +643,10 @@ function sGlide(self, options){
 			css(plusBtn, clone(cssUserSelect), cssPrefixes);
 
 			if (!settings.disabled){
-				plusBtn.addEventListener(mEvt.down, function(){
-					btn_is_down = true;
-					btnTriggers('>');
-					btn_timers = setTimeout(function(){
-						btnHold('>');
-					}, 500);
-				});
+				plusBtn.addEventListener(mEvt.down, eventPlusMouseDown);
 				plusBtn.addEventListener(mEvt.up, btnClearAction);
 
-				minusBtn.addEventListener(mEvt.down, function(){
-					btn_is_down = true;
-					btnTriggers('<');
-					btn_timers = setTimeout(function(){
-						btnHold('<');
-					}, 500);
-				});
+				minusBtn.addEventListener(mEvt.down, eventMinusMouseDown);
 				minusBtn.addEventListener(mEvt.up, btnClearAction);
 			}
 		}, btnTriggers = function(direction, smoothBln){
@@ -686,10 +684,10 @@ function sGlide(self, options){
 			// gui
 			knob.style.left = pxAdjust+'px';// (set_value-knob_adjust)+'%';
 			follow.style.width = px+'px';// set_value+'%';
-			if (colorChangeBln) colorChange(set_value);
+			if (colorChangeBln) colorChange({'percent':set_value});
 
 			// output
-			if (options.onButton) options.onButton({'id':guid, 'value':THE_VALUE, 'el':self});
+			if (options.onButton) options.onButton(updateME(getPercent(pxAdjust)));
 		}, btnHold = function(dir){
 			var btnHold_timer = setInterval(function(){
 				if (btn_is_down) btnTriggers(dir, true);
@@ -699,7 +697,23 @@ function sGlide(self, options){
 			btn_is_down = false;
 			clearTimeout(btn_timers);
 		}, knob_adjust = 0, btn_is_down = false, btn_timers = null;
-		var btn_snap = (settings.snap.points > 0 && settings.snap.points <= 9 && (settings.snap.hard || settings.snap.onlyOnDrop));
+		var btn_snap = (settings.snap.points > 0 && settings.snap.points <= 9 && (snapType == 'hard' || snapType == 'soft'));
+
+		// button and arrow key events
+		eventPlusMinusMouseUp	= btnClearAction;
+		eventPlusMouseDown		= function(){
+			eventPlusMinusMouseDown('>');
+		};
+		eventMinusMouseDown		= function(){
+			eventPlusMinusMouseDown('<');
+		};
+		var eventPlusMinusMouseDown = function(dir){
+			btn_is_down = true;
+			btnTriggers(dir);
+			btn_timers = setTimeout(function(){
+				btnHold(dir);
+			}, 500);
+		};
 
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// events
@@ -744,7 +758,7 @@ function sGlide(self, options){
 
 				// physically snap it
 				if (kind == 'drag'){
-					if (settings.snap.hard){
+					if (snapType == 'hard'){
 						knob.style.left = closest+'px';
 						follow.style.width = closest+knobWidth/2+'px';
 						doOnSnap(closest, pctVal);
@@ -764,7 +778,7 @@ function sGlide(self, options){
 		}, doOnSnap = function(a, b){ // callback: onSnap
 			if (options.onSnap && 's'+a !== storedSnapValue){
 				storedSnapValue = 's'+a;
-				options.onSnap({'id':guid, 'value':b, 'el':self});
+				options.onSnap(updateME(getPercent(a)));
 			}
 		};
 
@@ -785,18 +799,10 @@ function sGlide(self, options){
 					}
 
 					if (keycode == codeBack){
-						btn_is_down = true;
-						btnTriggers('<');
-						btn_timers = setTimeout(function(){
-							btnHold('<');
-						}, 500);
+						eventMinusMouseDown();
 						keydown = true;
 					} else if (keycode == codeFwd){
-						btn_is_down = true;
-						btnTriggers('>');
-						btn_timers = setTimeout(function(){
-							btnHold('>');
-						}, 500);
+						eventPlusMouseDown();
 						keydown = true;
 					}
 				}
@@ -855,7 +861,7 @@ function sGlide(self, options){
 
 			// constraint
 			if (x <= stopper){
-				knob.style.left = '0px';
+				knob.style.left = '0';
 				follow.style.width = stopper+'px';
 			} else if (x >= selfWidth-stopper){
 				knob.style.left = (selfWidth-knobWidth)+'px';
@@ -863,7 +869,8 @@ function sGlide(self, options){
 			} else {
 				knob.style.left = (x-stopper)+'px';
 				follow.style.width = x+'px';
-				if (!settings.snap.onlyOnDrop) doSnap('drag', m);
+				// if (!settings.snap.onlyOnDrop) doSnap('drag', m);
+				if (!snapType || snapType == 'hard') doSnap('drag', m);
 			}
 
 			result = knob.style.left;
@@ -894,10 +901,10 @@ function sGlide(self, options){
 				var m			= x - stopper;	// true position of knob
 
 				// snap to
-				if (snaps > 0 && snaps < 10 && (settings.snap.onlyOnDrop || settings.snap.hard))	// min 1, max 9
+				if (snaps > 0 && snaps < 10 && (snapType == 'soft' || snapType == 'hard'))	// min 1, max 9
 					result = doSnap('drop', m);
-				else {
-					var mm	= knob.offsetLeft,
+				// else {
+					/*var mm	= knob.offsetLeft,
 						mq	= selfWidth - knobWidth;
 
 					// constraint
@@ -907,10 +914,10 @@ function sGlide(self, options){
 					} else if (mm >= mq){
 						knob.style.left = mq+'px';
 						follow.style.width = (selfWidth-stopper)+'px';
-					}
+					}*/
 
-					result = knob.style.left.replace('px', '');
-				}
+				// 	result = knob.style.left.replace('px', '');
+				// }
 
 				if (options.drop) options.drop(updateME(getPercent(result)));
 				if (options.drag && self.getAttribute('data-state') == 'active') options.drag(updateME(getPercent(result)));
@@ -936,26 +943,41 @@ function sGlide(self, options){
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// functions
 
+		if (customRange){
+			var cstmStart = settings.totalRange[0];
+			var diff = settings.totalRange[1] - cstmStart;
+		}
+		var sendData = {'percent': null};
 		var getPercent = function(o){
+			var cstm = 0;
 			o = parseFloat(o, 10);
 
 			// calculate percentage
 			var pct = o / (self.offsetWidth - knob.offsetWidth) * 100;
+			pct = Math.min(pct, 100);
+
+			// calculate unit
+			if (customRange) cstm = diff * pct / 100 + cstmStart;
+
 			THE_VALUE = startAt = pct;
 
-			return pct;
+			// set data to send
+			sendData.percent = pct;
+			if (customRange) sendData.custom = cstm;
+
+			return sendData;
 		};
 
 		var updateME = function(o){
-			if (self.getAttribute('data-state') == 'active'){
-				return {'id':guid, 'value':o, 'el':self};
-			}
+			o.id = guid;
+			o.el = self;
+			return o;
 		};
 
 		// color change
 		var colorShiftInit = function(){
 			var selfHeightHalf = self.offsetHeight / 2;
-			var borderRadius = 'border-radius: '+(r_corners ? selfHeightHalf + 'px 0 0 ' + selfHeightHalf + 'px' : '0px');
+			var borderRadius = 'border-radius: '+(r_corners ? selfHeightHalf + 'px 0 0 ' + selfHeightHalf + 'px' : '0');
 			css(follow, {
 				'overflow': 'hidden',
 				'background-color': settings.colorShift[0]
@@ -965,7 +987,7 @@ function sGlide(self, options){
 		}
 		var colorChange = function(o){
 			// css(follow.childNodes[0], {'opacity': ''+(o/100)});
-			follow.childNodes[0].style.opacity = o / 100;
+			follow.children[0].style.opacity = o.percent / 100;
 		};
 
 		var eventBarMouseDown = function(e){
@@ -975,7 +997,7 @@ function sGlide(self, options){
 			is_down = true;
 			self.setAttribute('data-state', 'active');
 
-			if (!isMobile && !settings.snap.onlyOnDrop){
+			if (!isMobile && snapType != 'soft'){
 				var selfWidth = self.offsetWidth;
 				var knobWidth = knob.offsetWidth;
 				var x = null;
@@ -996,7 +1018,7 @@ function sGlide(self, options){
 				follow.style.width = m+(knobWidth/2)+'px';
 				
 				// constraint
-				if (m < 0) knob.style.left = '0px';
+				if (m < 0) knob.style.left = '0';
 				else if (m >= selfWidth-knobWidth) knob.style.left = (selfWidth-knobWidth)+'px';
 			}
 		};
@@ -1009,29 +1031,29 @@ function sGlide(self, options){
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// start
 
-		var setStartAt = function(num){
-			startAt = (num) ? num : settings.startAt;
+		var setStartAt = function(){
+			var num = startAt;
 
-			that.startAt(startAt);
+			var rlt	= knob.style.left || '0';
+			rlt	= rlt.replace('px', '');
+			rlt = updateME(getPercent(rlt));
 
-			var rlt = {'id':guid, 'value':startAt, 'el':self};
 			if (options.drop) options.drop(rlt);
 			if (options.drag) options.drag(rlt);
 
 			// inits
-			if (snaps > 0 && snaps < 10) drawSnapmarks();
-			if (vert) verticalTransform();
-			if (buttons) drawButtons();
-			if (colorChangeBln){
-				colorShiftInit();
-				colorChange(startAt);
-			}
+			if (snaps > 0 && snaps < 10)	drawSnapmarks();
+			if (vert)						verticalTransform();
+			if (buttons)					drawButtons();
+			if (colorChangeBln)				colorShiftInit();
+
+			that.startAt(num);
 		};
 
 		var onload_timer = setInterval(function(){
 			if (imgLoaded){
 				clearInterval(onload_timer);
-				setStartAt(startAt);
+				setStartAt();
 				if (options.onload) options.onload();
 			}
 		}, 1);

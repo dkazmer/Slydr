@@ -121,6 +121,7 @@ version:	2.0.0
 				self.children('.follow_bar').off(mEvt.down).remove();
 				self.removeAttr('style');
 			});
+			return this;
 		},
 		startAt: function(pct, animated){
 			this.each(function(i, el){
@@ -151,7 +152,12 @@ version:	2.0.0
 					knob.css('left', pxAdjust+'px');
 					follow.css('width', px+'px');
 				}
+
+				// color shifting
+				if (helpers[guid+'-colorChange'])
+					follow[0].children[0].style.opacity = pct / 100;
 			});
+			return this;
 		},
 		init: function(options){
 			this.each(function(i, el){
@@ -186,8 +192,7 @@ version:	2.0.0
 					'pill'			: true,
 					'snap'			: {
 						'marks'		: false,
-						'hard'		: false,
-						'onlyOnDrop': false,
+						'type'		: false,
 						'points'	: 0
 					},
 					'disabled'		: false,
@@ -195,6 +200,7 @@ version:	2.0.0
 					'vertical'		: false,
 					'showKnob'		: true,
 					'buttons'		: false,
+					'totalRange'	: [0,0],
 					'retina'		: true
 				}, options);
 
@@ -231,10 +237,11 @@ version:	2.0.0
 				}
 
 				// variables
-				valueObj[guid]		= settings.startAt;
-				var result			= 0,
+				var THE_VALUE		= valueObj[guid] = settings.startAt,
+					result			= 0,
 					vert			= settings.vertical,
 					markers			= (settings.snap.points > 0 && settings.snap.points <= 9 && settings.snap.marks),
+					snapType		= (settings.snap.type != 'hard' && settings.snap.type != 'soft') ? false : settings.snap.type,
 					knob_bg			= '#333',
 					knob_width		= (settings.showKnob && !settings.disabled ? '2%' : '0'),
 					knob_height		= 'inherit',
@@ -247,9 +254,11 @@ version:	2.0.0
 					keyCtrlShift	= (self.attr('data-keys') == 'shift') ? true : false,
 					colorChangeBln	= (settings.colorShift.length > 1) ? true : false,
 					isMobile		= helpers[guid+'-isMobile'],
+					customRange		= (settings.totalRange[0] !== 0 || settings.totalRange[1] !== 0) && settings.totalRange[0] < settings.totalRange[1],
 					retina			= (window.devicePixelRatio > 1) && settings.retina;
 
-				helpers[guid+'-buttons'] = settings.buttons;
+				helpers[guid+'-buttons']		= settings.buttons;
+				helpers[guid+'-colorChange']	= colorChangeBln;
 
 				//------------------------------------------------------------------------------------------------------------------------------------
 				// image handling
@@ -297,17 +306,17 @@ version:	2.0.0
 						knob.css(knob_bg_styles);
 						follow.css({
 							'height': knob_height,
-							'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0px'
+							'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0'
 						});
 						self.css({
 							'height': knob_height,
-							'border-radius': r_corners ? thisHeight / 2 + 'px' : '0px'
+							'border-radius': r_corners ? thisHeight / 2 + 'px' : '0'
 						});
 
 						imgEl.remove();
 
-						self.knobMarginValue = 0;
 						if (thisHeight > settings.height){
+							var knobMarginValue = 0;
 							knobMarginValue = (thisHeight-settings.height)/2;
 							self.css({
 								// 'margin-top': knobMarginValue+'px',
@@ -318,7 +327,7 @@ version:	2.0.0
 							});
 							follow.css({
 								'height': settings.height+'px',
-								'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0px'
+								'border-radius': r_corners ? thisHeight / 2 + 'px 0 0 ' + thisHeight / 2 + 'px' : '0'
 							});
 						} else {
 							// children stay inside parent
@@ -390,16 +399,15 @@ version:	2.0.0
 					'background': knob_bg,
 					'height': knob_height,
 					'display': (!settings.disabled ? 'inline-block' : 'none'),
-					'font-size': '0px',
+					'font-size': '0',
 					'position': 'relative',
-					'z-index': '999'
+					'z-index': '1'
 				}).css(cssContentBox);
 
 				follow.css({
 					'position': (!settings.disabled ? 'absolute' : 'static'),	// static when 'disabled' for self.overflow.hidden to work in Chrome
 					'height': knob.height()+'px',
-					'width': '0px',
-					'z-index': '998'
+					'width': '0'
 				}).css(cssContentBox);
 
 				//------------------------------------------------------------------------------------------------------------------------------------
@@ -434,10 +442,11 @@ version:	2.0.0
 
 					// markers
 					if (markers){
+						var marks = null;
 						if (!resize){
 							self.after('<div id="'+guid+'_markers"></div>');
 							
-							var marks = $('#'+guid+'_markers');
+							marks = $('#'+guid+'_markers');
 							
 							marks.css({
 								'width': self_width+'px', //settings.width + unit,
@@ -447,7 +456,7 @@ version:	2.0.0
 								'box-sizing': 'border-box'
 							}).css(cssUserSelect);
 						} else {
-							var marks = $('#'+guid+'_markers');
+							marks = $('#'+guid+'_markers');
 							marks.html('');
 						}
 
@@ -498,13 +507,14 @@ version:	2.0.0
 						minusStr	= '<div class="sglide-buttons" id="'+guid+'_minus" style="display:inline-block; cursor:pointer'+(vert ? vertStyles : '')+'">&nbsp;&minus;&nbsp;</div>';
 
 					if (markers){
+						var q = null;
 						if (!vert){
 							self.css('width', 'auto');
 							var a = (vert) ? $('#'+guid+'_vert-marks') : $('#'+guid+', #'+guid+'_markers');
 							a.wrapAll('<div id="'+guid+'_button-marks" style="display:inline-block; vertical-align:middle; width:'+width+unit+'"></div>');
-							var q = $('#'+guid+'_button-marks');
+							q = $('#'+guid+'_button-marks');
 						} else {
-							var q = $('#'+guid+'_vert-marks');
+							q = $('#'+guid+'_vert-marks');
 						}
 
 						q.after(plusStr);
@@ -527,19 +537,11 @@ version:	2.0.0
 
 					if (!settings.disabled){
 						plusBtn.on(mEvt.down, function(){
-							btn_is_down = true;
-							btnTriggers('>');
-							btn_timers = setTimeout(function(){
-								btnHold('>');
-							}, 500);
+							eventPlusMinusMouseDown('>');
 						}).on(mEvt.up, btnClearAction);
 
 						minusBtn.on(mEvt.down, function(){
-							btn_is_down = true;
-							btnTriggers('<');
-							btn_timers = setTimeout(function(){
-								btnHold('<');
-							}, 500);
+							eventPlusMinusMouseDown('<');
 						}).on(mEvt.up, btnClearAction);
 					}
 				}, btnTriggers = function(direction, smoothBln){
@@ -573,10 +575,11 @@ version:	2.0.0
 					// gui
 					knob.css('left', pxAdjust+'px');
 					follow.css('width', px+'px');
-					if (colorChangeBln) colorChange(set_value);
+					if (colorChangeBln) colorChange({'percent': set_value});
 
 					// output
-					if (options.onButton) options.onButton({'id':guid, 'value':THE_VALUE, 'el':self});
+					// if (options.onButton) options.onButton({'id':guid, 'value':THE_VALUE, 'el':self});
+					if (options.onButton) options.onButton(updateME(getPercent(pxAdjust)));
 					valueObj[guid] = THE_VALUE;
 				}, btnHold = function(dir){
 					var btnHold_timer = setInterval(function(){
@@ -587,7 +590,7 @@ version:	2.0.0
 					btn_is_down = false;
 					clearTimeout(btn_timers);
 				}, knob_adjust = 0, btn_is_down = false, btn_timers = null;
-				var btn_snap = (settings.snap.points > 0 && settings.snap.points <= 9 && (settings.snap.hard || settings.snap.onlyOnDrop));
+				var btn_snap = (settings.snap.points > 0 && settings.snap.points <= 9 && (snapType == 'hard' || snapType == 'soft'));
 
 				//------------------------------------------------------------------------------------------------------------------------------------
 				// events
@@ -621,38 +624,43 @@ version:	2.0.0
 						var closest = null, pctVal = 0;
 						$.each(snapPixelValues, function(i){
 							if (closest === null || Math.abs(this - m) < Math.abs(closest - m)){
-								closest = this;
+								closest = this | 0;
 								pctVal = snapPctValues[i];
 							}
 						});
 
 						// physically snap it
 						if (kind == 'drag'){
-							if (settings.snap.hard){
-								knob.css('left', closest+'px');
-								follow.css('width', closest+knobWidth/2+'px');
+							if (snapType == 'hard'){
+								updateSnap(closest, (closest+knobWidth/2));
 								doOnSnap(closest, pctVal);
 							} else {
 								if (Math.round(Math.abs(closest - m)) < pctFive){
-									knob.css('left', closest+'px');
-									follow.css('width', closest+knobWidth/2+'px');
+									updateSnap(closest, (closest+knobWidth/2));
 									doOnSnap(closest, pctVal);
 								} else storedSnapValue = 's-1';
 							}
 						} else if (kind == 'hard'){
-							knob.css('left', closest+'px');
-							follow.css('width', closest+knobWidth/2+'px');
+							updateSnap(closest, (closest+knobWidth/2));
 							return closest;
 						} else {
-							knob.animate({'left': closest+'px'}, 'fast');
-							follow.animate({'width': closest+knobWidth/2+'px'}, 'fast');
+							updateSnap(closest, (closest+knobWidth/2), true);
 							return closest;
 						}
 					}
 				}, doOnSnap = function(a, b){ // callback: onSnap
 					if (options.onSnap && 's'+a !== storedSnapValue){
+						if (b > 100) b = 100;	// patch
 						storedSnapValue = 's'+a;
-						options.onSnap({'id':guid, 'value':b, 'el':self});
+						options.onSnap(updateME(getPercent(a)));
+					}
+				}, updateSnap = function(knobPos, followPos, animateBln){
+					if (!animateBln){
+						knob.css('left', knobPos+'px');
+						follow.css('width', followPos+'px');
+					} else {
+						knob.animate({'left': knobPos+'px'}, 'fast');
+						follow.animate({'width': followPos+'px'}, 'fast');
 					}
 				};
 
@@ -677,18 +685,10 @@ version:	2.0.0
 							}
 
 							if (keycode == codeBack){
-								btn_is_down = true;
-								btnTriggers('<');
-								btn_timers = setTimeout(function(){
-									btnHold('<');
-								}, 500);
+								eventPlusMinusMouseDown('<');
 								keydown = true;
 							} else if (keycode == codeFwd){
-								btn_is_down = true;
-								btnTriggers('>');
-								btn_timers = setTimeout(function(){
-									btnHold('>');
-								}, 500);
+								eventPlusMinusMouseDown('>');
 								keydown = true;
 							}
 						}
@@ -697,6 +697,15 @@ version:	2.0.0
 						btnClearAction();
 					});
 				}
+
+				// button and arrow key events
+				var eventPlusMinusMouseDown = function(dir){
+					btn_is_down = true;
+					btnTriggers(dir);
+					btn_timers = setTimeout(function(){
+						btnHold(dir);
+					}, 500);
+				};
 
 				if (isMobile){
 					$(document).on(mEvt.down+'.'+guid, function(e){
@@ -714,9 +723,6 @@ version:	2.0.0
 					if (!is_down) return false;
 
 					e = e || event;	// ie fix
-
-					// e.stopPropagation();
-					// e.preventDefault();
 
 					var x			= null,
 						knobWidth	= knob.width();
@@ -742,7 +748,7 @@ version:	2.0.0
 
 					// constraint & position
 					if (x <= stopper){
-						knob.css('left', '0px');
+						knob.css('left', '0');
 						follow.css('width', stopper+'px');
 					} else if (x >= self_width-stopper){
 						knob.css('left', (self_width-knobWidth)+'px');
@@ -750,7 +756,8 @@ version:	2.0.0
 					} else {
 						knob.css('left', (x-stopper)+'px');
 						follow.css('width', x+'px');
-						if (!settings.snap.onlyOnDrop) doSnap('drag', m);
+						// if (!settings.snap.onlyOnDrop) doSnap('drag', m);
+						if (!snapType || snapType == 'hard') doSnap('drag', m);
 					}
 
 					result = knob[0].style.left;	//knob.css('left');
@@ -782,11 +789,11 @@ version:	2.0.0
 						var m			= x - stopper;	// true position of knob
 
 						// snap to
-						if (snaps > 0 && snaps < 10 && (settings.snap.onlyOnDrop || settings.snap.hard))	// min 1, max 9
-							result = doSnap((settings.snap.hard) ? 'hard' : 'drop', m);
-						else {
+						if (snaps > 0 && snaps < 10 && (snapType == 'soft' || snapType == 'hard'))	// min 1, max 9
+							result = doSnap((snapType == 'hard') ? 'hard' : 'soft', m);
+						// else {
 							// var mm	= knob.offset().left,	// odd behaviour on vertical
-							var mm	= knob[0].offsetLeft,
+							/*var mm	= knob[0].offsetLeft,
 								mq	= self_width - knobWidth;
 
 							// constraint
@@ -796,11 +803,11 @@ version:	2.0.0
 							} else if (mm >= mq){
 								knob.css('left', mq+'px');
 								follow.css('width', (self_width-stopper)+'px');
-							}
+							}*/
 
-							result = knob[0].style.left;	//knob.css('left');
-							result.replace('px', '');
-						}
+							// result = knob[0].style.left;	//knob.css('left');
+							// result = result.replace('px', '');
+						// }
 
 						if (options.drop) options.drop(updateME(getPercent(result)));
 						if (options.drag && state == 'active') options.drag(updateME(getPercent(result)));
@@ -817,39 +824,75 @@ version:	2.0.0
 				//------------------------------------------------------------------------------------------------------------------------------------
 				// functions
 
-				var getPercent = function(o){
+				/*var getPercent = function(o){
 					o = parseFloat(o, 10);
 					// calculate percentage
 					var pct = o / (self_width - knob.width()) * 100;
 					valueObj[guid] = pct;
 
-					return pct;
+					return Math.min(pct, 100);
 				};
 
 				var updateME = function(o){
 					if (self.data('state') == 'active'){
 						return {'id':guid, 'value':o, 'el':self};
 					}
+				};*/
+
+
+				
+
+				if (customRange){
+					var cstmStart = settings.totalRange[0];
+					var diff = settings.totalRange[1] - cstmStart;
+				}
+				var sendData = {'percent': null};
+				var getPercent = function(o){
+					var cstm = 0;
+					o = parseFloat(o, 10);
+
+					// calculate percentage
+					var pct = o / (self[0].offsetWidth - knob[0].offsetWidth) * 100;
+					pct = Math.min(pct, 100);
+
+					// calculate unit
+					if (customRange) cstm = diff * pct / 100 + cstmStart;
+
+					THE_VALUE = startAt = pct;
+
+					// set data to send
+					sendData.percent = pct;
+					if (customRange) sendData.custom = cstm;
+
+					return sendData;
 				};
+
+				var updateME = function(o){
+					o.id = guid;
+					o.el = self;
+					return o;
+				};
+
+
 
 				// color change
 				var colorShiftInit = function(){
 					var selfHeightHalf = self.offsetHeight / 2;
-					var borderRadius = 'border-radius: '+(r_corners ? selfHeightHalf + 'px 0 0 ' + selfHeightHalf + 'px' : '0px');
+					var borderRadius = 'border-radius: '+(r_corners ? selfHeightHalf + 'px 0 0 ' + selfHeightHalf + 'px' : '0');
 					follow.css({
 						'overflow': 'hidden',
 						'background-color': settings.colorShift[0]
 					});
 
 					follow.html('<div style="opacity:'+(settings.startAt/100)+'; height:100%; background-color:'+settings.colorShift[1]+'; "></div>');
-				}
+				};
 				var colorChange = function(o){
 					// follow.find('div').css('opacity', ''+(o/100));
-					follow[0].childNodes[0].style.opacity = o / 100;
+					follow[0].children[0].style.opacity = o.percent / 100;
 				};
 
 				// bar
-				var MD = function(e){
+				var eventBarMouseDown = function(e){
 					e = e || event;	// ie fix
 					e.stopPropagation();
 					e.preventDefault();
@@ -858,7 +901,7 @@ version:	2.0.0
 					is_down = true;
 					self.data('state', 'active');
 
-					if (!isMobile && !settings.snap.onlyOnDrop){
+					if (!isMobile && snapType != 'soft'){
 						var x = null;
 						if (vert){
 							var base = self.position().top + self.width();
@@ -870,25 +913,27 @@ version:	2.0.0
 						follow.css('width', m+(knob.width()/2)+'px');
 						
 						// constraint
-						if (m < 0) knob.css('left', '0px');
+						if (m < 0) knob.css('left', '0');
 						else if (m >= self.width()-knob.width()) knob.css('left', self.width()-knob.width()+'px');
 					}
 				};
 
 				if (!settings.disabled){
-					self.on(mEvt.down, function(e){ MD(e); });
-					follow.on(mEvt.down, function(e){ MD(e); });
+					self.on(mEvt.down, eventBarMouseDown);
+					follow.on(mEvt.down, eventBarMouseDown);
 				}
 
 				//------------------------------------------------------------------------------------------------------------------------------------
 				// start
 
 				var setStartAt = function(num){
-					startAt = (num) ? num : settings.startAt;
+					var num = valueObj[guid];
 
-					self.sGlide('startAt', startAt);
+					// var rlt = {'id':guid, 'value':startAt, 'el':self};
+					var rlt	= knob[0].style.left || '0';
+					rlt	= rlt.replace('px', '');
+					rlt = updateME(getPercent(rlt));
 
-					var rlt = {'id':guid, 'value':startAt, 'el':self};
 					if (options.drop) options.drop(rlt);
 					if (options.drag) options.drag(rlt);
 
@@ -896,10 +941,9 @@ version:	2.0.0
 					if (snaps > 0 && snaps < 10) drawSnapmarks();
 					if (vert) verticalTransform();
 					if (helpers[guid+'-buttons']) drawButtons();
-					if (colorChangeBln){
-						colorShiftInit();
-						colorChange(startAt);
-					}
+					if (colorChangeBln) colorShiftInit();
+
+					self.sGlide('startAt', num);
 				};
 
 				var onload_timer = setInterval(function(){
