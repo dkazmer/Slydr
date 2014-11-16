@@ -21,24 +21,26 @@
 #slider1_vert-marks {margin-left: 60px !important;}
 </style>
 
-<script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
-<script type="text/javascript" src="jquery.sglide.js"></script>
-<!-- <script type="text/javascript" src="sglide.js"></script> -->
+<!-- <script type="text/javascript" src="polyfills.js"></script> -->
+<!-- <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script type="text/javascript" src="jquery.sglide.js"></script> -->
+<script type="text/javascript" src="sglide.js"></script>
 <!-- <script type="text/javascript" src="../../~web~/sGlide/jquery.sglide.2.min.js"></script> -->
 <!-- <script type="text/javascript" src="../../~web~/sGlide/sglide.2.min.js"></script> -->
 
 <script type="text/javascript">
 	function run(){
-		/*sglideArr = [];
-		var elsArr = document.getElementsByClassName('slider_bar');
+		sglideArr = [];
+		// var elsArr = document.getElementsByClassName('slider_bar');
+		var elsArr = [document.getElementById('slider1'), document.getElementById('slider2')];
 
 		for (var i = 0; i < elsArr.length; i++) {
 			sglideArr.push(new sGlide(elsArr[i], {
-				'startAt': 30,
-				// 'height': 20,
+				'startAt': 30*(i+1),
+				'height': 20,
 				'width': 600,
 				'unit': 'px',
-				'image': 'img/knob_.png',
+				// 'image': 'img/knob_.png',
 				// 'pill': false,
 				'snap': {
 					'marks': true,
@@ -61,14 +63,14 @@
 			}));
 		}
 
-		console.log('sglideArr',sglideArr);*/
+		console.log('sglideArr',sglideArr);
 
-		$('.slider_bar').sGlide({
-			'startAt': 40,
+		/*$('.slider_bar').sGlide({
+			'startAt': 50,
 			'width': 600,
-			// 'height': 22,
+			'height': 22,
 			'unit': 'px',
-			'image': 'img/knob_.png',
+			// 'image': 'img/knob_.png',
 			// 'pill': false,
 			'totalRange': [58,102],
 			// 'locked': true,
@@ -87,7 +89,7 @@
 			onButton: function(o){
 				console.log('> onButton',o);//,o.id,o);
 			}
-		});
+		});*/
 	};
 </script>
 

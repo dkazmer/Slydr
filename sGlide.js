@@ -70,7 +70,6 @@ function sGlide(self, options){
 		follow			= null,
 		startAt			= 0,
 		img				= '',
-		imgLoaded		= false,
 		isMobile		= false,
 		buttons			= false,
 		keyCtrl			= false,
@@ -94,9 +93,27 @@ function sGlide(self, options){
 			'down'	: 'mousedown',
 			'up'	: 'mouseup',
 			'move'	: 'mousemove'
-		};
+		}
+		uAgent = navigator.userAgent;
 
 	this.element = self;
+
+	// CustomEvent polyfill for IE
+	if (!(CustomEvent instanceof Function)){
+	// if (typeof CustomEvent === 'undefined'){
+		(function(){
+			function CustomEvent(event, params){
+				params = params || { bubbles: false, cancelable: false, detail: undefined };
+				// var evt = document.createEvent('CustomEvent');
+				var evt = document.createEvent('CustomEvent');
+				evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+				return evt;
+			}
+
+			CustomEvent.prototype = window.Event.prototype;
+			window.CustomEvent = CustomEvent;
+		})();
+	}
 
 	//------------------------------------------------------------------------------------------------------------------------------------
 	// public methods
@@ -143,16 +160,6 @@ function sGlide(self, options){
 			}
 		}
 
-		// windows phone touch events
-		if (window.navigator.msPointerEnabled){
-			document.removeEventListener(mEvt.msup, eventDocumentMouseUp);
-			document.removeEventListener(mEvt.msmove, eventDocumentMouseMove);
-			self.removeEventListener(mEvt.msdown, eventBarMouseDown);
-			follow.removeEventListener(mEvt.msdown, eventBarMouseDown);
-			knob.removeEventListener(mEvt.msdown, eventKnobMouseDown);
-			knob.removeEventListener(mEvt.msup, eventKnobMouseDown);
-		}
-
 		document.removeEventListener(mEvt.move, eventDocumentMouseMove);
 		document.removeEventListener(mEvt.up, eventDocumentMouseUp);
 		window.removeEventListener('resize', eventWindowResize);
@@ -171,7 +178,7 @@ function sGlide(self, options){
 
 	this.startAt = function(pct){
 		startAt = pct;
-		
+
 		// set pixel positions
 		var selfWidth = self.offsetWidth;
 		var knobWidth = knob.offsetWidth;
@@ -249,7 +256,7 @@ function sGlide(self, options){
 		return c;
 	}
 
-	function css(el, styles, prefixes,e){
+	function css(el, styles, prefixes){
 		var existingArr	= (el.getAttribute('style') ? el.getAttribute('style').split(';') : []),
 			existingObj	= {},
 			stl			= null;
@@ -259,8 +266,8 @@ function sGlide(self, options){
 			var temp = {};
 			for (var key in styles){
 				if (styles.hasOwnProperty(key)){
-					for (var i = 0; i < prefixes.length; i++){
-						temp[prefixes[i]+key] = styles[key];
+					for (var j = 0; j < prefixes.length; j++){
+						temp[prefixes[j]+key] = styles[key];
 					}
 				}
 			}
@@ -335,8 +342,6 @@ function sGlide(self, options){
 
 		self.removeAttribute('style');	// remove user inline styles
 
-		var uAgent = navigator.userAgent;
-
 		if (uAgent.match(/Android/i) ||
 			uAgent.match(/webOS/i) ||
 			uAgent.match(/iPhone/i) ||
@@ -350,7 +355,7 @@ function sGlide(self, options){
 		} else if (uAgent.match(/Windows Phone/i)){
 			if (window.navigator.msPointerEnabled){
 				css(self, {'-ms-touch-action': 'none'});
-				mEvt.msdown = 'MSPointerDown'; mEvt.msup = 'MSPointerUp'; mEvt.msmove = 'MSPointerMove';
+				mEvt.down = 'MSPointerDown'; mEvt.up = 'MSPointerUp'; mEvt.move = 'MSPointerMove';
 			} else {
 				mEvt.down = 'touchstart'; mEvt.up = 'touchend'; mEvt.move = 'touchmove';
 			}
@@ -399,8 +404,6 @@ function sGlide(self, options){
 			knob.innerHTML = '<img src="'+img+'" style="visibility:hidden" />';
 			var imgEl = knob.childNodes[0];
 			imgEl.onload = function(){
-				imgLoaded = true;
-
 				if (retina){
 					imgEl.style.width = (imgEl.offsetWidth / 2) + 'px';
 					// imgEl.style.height = (imgEl.offsetHeight / 2) + 'px';
@@ -450,12 +453,17 @@ function sGlide(self, options){
 					// children stay inside parent
 					css(self, {'overflow': 'hidden'});
 				}
+
+				window.dispatchEvent(eventMakeReady);
 			};
 		} else {
-			imgLoaded = true;
 			var d = settings.height / 2;
 			css(self, {'border-radius': (r_corners ? d+'px' : '0'), 'overflow': 'hidden'});
 			css(follow, {'border-radius': (r_corners ? d+'px 0 0 '+d+'px' : '0')});
+			setTimeout(function(){
+				knob.style.backgroundColor = knob_bg;	// IE patch
+				window.dispatchEvent(eventMakeReady);
+			}, 0);
 		}
 
 		//------------------------------------------------------------------------------------------------------------------------------------
@@ -501,7 +509,7 @@ function sGlide(self, options){
 			'font-size': '0',
 			'position': 'relative',
 			'z-index': '1'
-		}, null, 'knobby');
+		});
 		css(knob, clone(cssContentBox), cssPrefixes);
 
 		css(follow, {
@@ -545,11 +553,12 @@ function sGlide(self, options){
 
 			// markers
 			if (markers){
+				var marks = null;
 				if (!resize){
 					// self.parentNode.insertBefore('<div id="'+guid+'_markers"></div>', self.nextSibling);
 					self.insertAdjacentHTML('afterend', '<div id="'+guid+'_markers"></div>');
 					
-					var marks = $('#'+guid+'_markers');
+					marks = $('#'+guid+'_markers');
 					
 					css(marks, {
 						'width': self.offsetWidth+'px', //settings.width + unit,
@@ -560,7 +569,7 @@ function sGlide(self, options){
 					css(marks, {'box-sizing': 'border-box'}, cssPrefixes);
 					css(marks, {'user-select': 'none'}, cssPrefixes);
 				} else {
-					var marks = $('#'+guid+'_markers');
+					marks = $('#'+guid+'_markers');
 					marks.innerHTML = '';
 				}
 
@@ -615,13 +624,14 @@ function sGlide(self, options){
 				minusStr	= '<div class="sglide-buttons" id="'+guid+'_minus" style="display:inline-block; cursor:pointer'+(vert ? vertStyles : '')+'">&nbsp;&minus;&nbsp;</div>';
 
 			if (markers){
+				var q = null;
 				if (!vert){
 					css(self, {'width': 'auto'});
 					var a = (vert) ? [$('#'+guid+'_vert-marks')] : [$('#'+guid), $('#'+guid+'_markers')];
 					wrapAll(a, '<div id="'+guid+'_button-marks" style="display:inline-block; vertical-align:middle; width:'+width+unit+'"></div>');
-					var q = $('#'+guid+'_button-marks');
+					q = $('#'+guid+'_button-marks');
 				} else {
-					var q = $('#'+guid+'_vert-marks');
+					q = $('#'+guid+'_vert-marks');
 				}
 
 				q.insertAdjacentHTML('afterend', plusStr);
@@ -903,21 +913,6 @@ function sGlide(self, options){
 				// snap to
 				if (snaps > 0 && snaps < 10 && (snapType == 'soft' || snapType == 'hard'))	// min 1, max 9
 					result = doSnap('drop', m);
-				// else {
-					/*var mm	= knob.offsetLeft,
-						mq	= selfWidth - knobWidth;
-
-					// constraint
-					if (mm <= 0){
-						knob.style.left = '0px';
-						follow.style.width = stopper+'px';
-					} else if (mm >= mq){
-						knob.style.left = mq+'px';
-						follow.style.width = (selfWidth-stopper)+'px';
-					}*/
-
-				// 	result = knob.style.left.replace('px', '');
-				// }
 
 				if (options.drop) options.drop(updateME(getPercent(result)));
 				if (options.drag && self.getAttribute('data-state') == 'active') options.drag(updateME(getPercent(result)));
@@ -984,7 +979,7 @@ function sGlide(self, options){
 			});
 
 			follow.innerHTML = '<div style="opacity:'+(settings.startAt/100)+'; height:100%; background-color:'+settings.colorShift[1]+'; "></div>';
-		}
+		};
 		var colorChange = function(o){
 			// css(follow.childNodes[0], {'opacity': ''+(o/100)});
 			follow.children[0].style.opacity = o.percent / 100;
@@ -1031,31 +1026,25 @@ function sGlide(self, options){
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// start
 
-		var setStartAt = function(){
+		var setStartAt = function(e){
 			var num = startAt;
 
-			var rlt	= knob.style.left || '0';
-			rlt	= rlt.replace('px', '');
-			rlt = updateME(getPercent(rlt));
-
-			if (options.drop) options.drop(rlt);
-			if (options.drag) options.drag(rlt);
+			var rlt = updateME({'percent':num});
 
 			// inits
 			if (snaps > 0 && snaps < 10)	drawSnapmarks();
 			if (vert)						verticalTransform();
 			if (buttons)					drawButtons();
 			if (colorChangeBln)				colorShiftInit();
+			if (options.onload)				options.onload(rlt);
 
 			that.startAt(num);
+
+			window.removeEventListener('makeready.'+guid, setStartAt);
 		};
 
-		var onload_timer = setInterval(function(){
-			if (imgLoaded){
-				clearInterval(onload_timer);
-				setStartAt();
-				if (options.onload) options.onload();
-			}
-		}, 1);
+		// Listen for image loaded
+		var eventMakeReady = new CustomEvent('makeready.'+guid);
+		window.addEventListener('makeready.'+guid, setStartAt);
 	})(document, this, get);
 }

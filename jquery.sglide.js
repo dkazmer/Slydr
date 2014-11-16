@@ -65,8 +65,8 @@ version:	2.0.0
 (function($){
 	var valueObj	= {};
 	var helpers		= {
-		/*'isMobile'	: false,
-		'buttons'	: false*/
+		// 'isMobile'	: false,
+		// 'buttons'	: false
 	};
 	var methods		= {
 		destroy: function(){
@@ -99,13 +99,6 @@ version:	2.0.0
 
 				if (helpers[guid+'-isMobile']){
 					mEvt.down = 'touchstart'; mEvt.up = 'touchend'; mEvt.move = 'touchmove';
-				// windows phone touch events
-				} else if (window.navigator.msPointerEnabled){
-					$(document).off(mEvt.msup, eventDocumentMouseUp);
-					$(document).off(mEvt.msmove, eventDocumentMouseMove);
-					self.off(mEvt.msdown, eventBarMouseDown);
-					self.children('.follow_bar').off(mEvt.msdown, eventBarMouseDown);
-					self.children('.slider_knob').off(mEvt.msdown, eventKnobMouseDown).off(mEvt.msup, eventKnobMouseDown);
 				} else
 					$(document).off('keydown.'+guid).off('keyup.'+guid);
 
@@ -230,7 +223,7 @@ version:	2.0.0
 				} else if (uAgent.match(/Windows Phone/i)){
 					if (window.navigator.msPointerEnabled){
 						self.css({'-ms-touch-action': 'none'});
-						mEvt.msdown = 'MSPointerDown'; mEvt.msup = 'MSPointerUp'; mEvt.msmove = 'MSPointerMove';
+						mEvt.down = 'MSPointerDown'; mEvt.up = 'MSPointerUp'; mEvt.move = 'MSPointerMove';
 					} else {
 						mEvt.down = 'touchstart'; mEvt.up = 'touchend'; mEvt.move = 'touchmove';
 					}
@@ -248,7 +241,6 @@ version:	2.0.0
 					self_height		= Math.round(settings.height)+'px',
 					r_corners		= settings.pill,
 					imageBln		= (settings.image != 'none' && settings.image !== '' && !settings.disabled),
-					imgLoaded		= false,
 					resize			= false,
 					keyCtrl			= (self.attr('data-keys') == 'true') ? true : false,
 					keyCtrlShift	= (self.attr('data-keys') == 'shift') ? true : false,
@@ -281,8 +273,6 @@ version:	2.0.0
 					knob.html('<img src="'+img+'" style="visibility:hidden; position:absolute" />');
 					// self_height = 'auto';
 					knob.children('img').load(function(){
-						imgLoaded = true;
-
 						var imgEl = $(this);
 
 						if (retina){
@@ -336,12 +326,16 @@ version:	2.0.0
 							// adjust color shifter height
 							follow.find('div').css('height', knob_height);
 						}
+
+						$(el).trigger(eventMakeReady);
 					});
 				} else {
-					imgLoaded = true;
 					var d = settings.height / 2;
 					self.css({'border-radius': (r_corners ? d+'px' : '0'), 'overflow': 'hidden'});
 					follow.css('border-radius', (r_corners ? d+'px 0 0 '+d+'px' : '0'));
+					setTimeout(function(){
+						$(el).trigger(eventMakeReady);
+					}, 0);
 				}
 
 				//------------------------------------------------------------------------------------------------------------------------------------
@@ -558,8 +552,8 @@ version:	2.0.0
 							} else intvl += p;
 						}
 					} else {
-						if (direction == '>')	THE_VALUE+=(smoothBln ? 1 : 10);
-						else					THE_VALUE-=(smoothBln ? 1 : 10);
+						if (direction == '>')	THE_VALUE += (smoothBln ? 1 : 10);
+						else					THE_VALUE -= (smoothBln ? 1 : 10);
 					}
 
 					set_value = THE_VALUE;	// leave THE_VALUE out of visual adjustments
@@ -580,7 +574,7 @@ version:	2.0.0
 					// output
 					// if (options.onButton) options.onButton({'id':guid, 'value':THE_VALUE, 'el':self});
 					if (options.onButton) options.onButton(updateME(getPercent(pxAdjust)));
-					valueObj[guid] = THE_VALUE;
+					else valueObj[guid] = THE_VALUE;
 				}, btnHold = function(dir){
 					var btnHold_timer = setInterval(function(){
 						if (btn_is_down) btnTriggers(dir, (btn_snap ? false : true));
@@ -772,6 +766,7 @@ version:	2.0.0
 					// color change
 					if (colorChangeBln && state == 'active')
 						colorChange(getPercent(result));
+
 				}).on(mEvt.up+'.'+guid, function(e){
 					var state = self.data('state');
 					is_down = false;
@@ -791,23 +786,6 @@ version:	2.0.0
 						// snap to
 						if (snaps > 0 && snaps < 10 && (snapType == 'soft' || snapType == 'hard'))	// min 1, max 9
 							result = doSnap((snapType == 'hard') ? 'hard' : 'soft', m);
-						// else {
-							// var mm	= knob.offset().left,	// odd behaviour on vertical
-							/*var mm	= knob[0].offsetLeft,
-								mq	= self_width - knobWidth;
-
-							// constraint
-							if (mm <= 0){
-								knob.css('left', '0px');
-								follow.css('width', stopper+'px');
-							} else if (mm >= mq){
-								knob.css('left', mq+'px');
-								follow.css('width', (self_width-stopper)+'px');
-							}*/
-
-							// result = knob[0].style.left;	//knob.css('left');
-							// result = result.replace('px', '');
-						// }
 
 						if (options.drop) options.drop(updateME(getPercent(result)));
 						if (options.drag && state == 'active') options.drag(updateME(getPercent(result)));
@@ -824,29 +802,11 @@ version:	2.0.0
 				//------------------------------------------------------------------------------------------------------------------------------------
 				// functions
 
-				/*var getPercent = function(o){
-					o = parseFloat(o, 10);
-					// calculate percentage
-					var pct = o / (self_width - knob.width()) * 100;
-					valueObj[guid] = pct;
-
-					return Math.min(pct, 100);
-				};
-
-				var updateME = function(o){
-					if (self.data('state') == 'active'){
-						return {'id':guid, 'value':o, 'el':self};
-					}
-				};*/
-
-
-				
-
 				if (customRange){
 					var cstmStart = settings.totalRange[0];
 					var diff = settings.totalRange[1] - cstmStart;
 				}
-				var sendData = {'percent': null};
+				var sendData = {};
 				var getPercent = function(o){
 					var cstm = 0;
 					o = parseFloat(o, 10);
@@ -858,7 +818,7 @@ version:	2.0.0
 					// calculate unit
 					if (customRange) cstm = diff * pct / 100 + cstmStart;
 
-					THE_VALUE = startAt = pct;
+					THE_VALUE = valueObj[guid] = pct;
 
 					// set data to send
 					sendData.percent = pct;
@@ -873,8 +833,6 @@ version:	2.0.0
 					return o;
 				};
 
-
-
 				// color change
 				var colorShiftInit = function(){
 					var selfHeightHalf = self.offsetHeight / 2;
@@ -887,7 +845,7 @@ version:	2.0.0
 					follow.html('<div style="opacity:'+(settings.startAt/100)+'; height:100%; background-color:'+settings.colorShift[1]+'; "></div>');
 				};
 				var colorChange = function(o){
-					// follow.find('div').css('opacity', ''+(o/100));
+					// follow.find('div').css('opacity', ''+(o.percent/100));
 					follow[0].children[0].style.opacity = o.percent / 100;
 				};
 
@@ -926,33 +884,26 @@ version:	2.0.0
 				//------------------------------------------------------------------------------------------------------------------------------------
 				// start
 
-				var setStartAt = function(num){
+				var setStartAt = function(e){
 					var num = valueObj[guid];
 
-					// var rlt = {'id':guid, 'value':startAt, 'el':self};
-					var rlt	= knob[0].style.left || '0';
-					rlt	= rlt.replace('px', '');
-					rlt = updateME(getPercent(rlt));
-
-					if (options.drop) options.drop(rlt);
-					if (options.drag) options.drag(rlt);
+					var rlt = updateME({'percent':num});
 
 					// inits
-					if (snaps > 0 && snaps < 10) drawSnapmarks();
-					if (vert) verticalTransform();
-					if (helpers[guid+'-buttons']) drawButtons();
-					if (colorChangeBln) colorShiftInit();
+					if (snaps > 0 && snaps < 10)	drawSnapmarks();
+					if (vert)						verticalTransform();
+					if (helpers[guid+'-buttons'])	drawButtons();
+					if (colorChangeBln)				colorShiftInit();
+					if (options.onload)				options.onload(rlt);
 
 					self.sGlide('startAt', num);
+
+					$(el).off('makeready.'+guid, setStartAt);
 				};
 
-				var onload_timer = setInterval(function(){
-					if (imgLoaded){
-						clearInterval(onload_timer);
-						setStartAt(valueObj[guid]);
-						if (options.onload) options.onload();
-					}
-				}, 1);
+				// Listen for image loaded
+				var eventMakeReady = $.Event('makeready.'+guid);
+				$(el).on('makeready.'+guid, setStartAt);
 			});
 		}
 	};
