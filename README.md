@@ -10,14 +10,14 @@ Quickstart Guide: apply the following to an empty DIV with a unique id.
 	// jQuery independent:
 	var my_sGlide_instance = new sGlide(my_element, {
 		startAt: 60,
-		width: 200,
+		width: 600,
 		height: 20,
 		unit: 'px',
 		snap: {
 			points: 5,
-			markers: true
+			marks: true
 		},
 		drop: function(o){
-			console.log(o.id+': '+o.value+'%');
+			// 'o' Object returned
 		}
 	});
