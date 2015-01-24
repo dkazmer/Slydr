@@ -4,9 +4,11 @@
 
 author:		Daniel Kazmer - http://iframework.net
 created:	24.11.2012
-version:	2.0.0
+version:	2.1.1
 
 	version history:
+		2.1.1	bug fix: clicking anywhere on bar didn't update value; nor did it update color in follow bar, for which a couple of constraint issues were also fixed (24.01.2015)
+		2.1.0	removed snap properties hard & onlyOnDrop in favour of snap.type; also snap.markers became snap.marks; added totalRange property & runtime values thereof returned; destroy method now chainable for jQuery; fixed minor scoping issue; modified colorShift handling; significant changes with regards to data entered and data received; replaced setInterval with event listener (+ IE polyfill); removed drag and drop callbacks from initiator function; added slider data to onload callback; jQuery: removed unnecessary removeEventListeners for IE that caused an error on destroy (16.11.2014)
 		2.0.0	major improvements in code structure, stability, accuracy; changed color shift property (see usage); only corresponding arrow keys for horizontal or vertical; added windows phone support; added retina image handling; fixed issues in destroy method; added shift + arrow keys (28.10.2014)
 		1.10.0	added keyboard functionality (03.01.2014)
 		1.9.1	bug fix: when button is pressed but released off button, button action now gets cleared (19.12.2013)
@@ -913,6 +915,8 @@ function sGlide(self, options){
 				// snap to
 				if (snaps > 0 && snaps < 10 && (snapType == 'soft' || snapType == 'hard'))	// min 1, max 9
 					result = doSnap('drop', m);
+				else
+					result = (m < 0 ? 0 : m);
 
 				if (options.drop) options.drop(updateME(getPercent(result)));
 				if (options.drag && self.getAttribute('data-state') == 'active') options.drag(updateME(getPercent(result)));
@@ -992,7 +996,7 @@ function sGlide(self, options){
 			is_down = true;
 			self.setAttribute('data-state', 'active');
 
-			if (!isMobile && snapType != 'soft'){
+			if (!isMobile && snapType !== 'hard'){
 				var selfWidth = self.offsetWidth;
 				var knobWidth = knob.offsetWidth;
 				var x = null;
@@ -1008,13 +1012,21 @@ function sGlide(self, options){
 					x = base - (e.pageY-2);
 				} else x = e.pageX - self.offsetLeft;
 				var m = x - (knobWidth / 2);	// true position of knob
+				
+				// constraint
+				if (m < 0){
+					m = 0;
+					knob.style.left = '0';
+				} else if (m >= selfWidth-knobWidth){
+					m = selfWidth-knobWidth;
+					knob.style.left = (selfWidth-knobWidth)+'px';
+				}
 
 				knob.style.left = m+'px';
 				follow.style.width = m+(knobWidth/2)+'px';
-				
-				// constraint
-				if (m < 0) knob.style.left = '0';
-				else if (m >= selfWidth-knobWidth) knob.style.left = (selfWidth-knobWidth)+'px';
+
+				// color change
+				if (colorChangeBln) colorChange(getPercent(m));
 			}
 		};
 

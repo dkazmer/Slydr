@@ -4,9 +4,11 @@
 
 author:		Daniel Kazmer - http://iframework.net
 created:	24.11.2012
-version:	2.0.0
+version:	2.1.1
 
 	version history:
+		2.1.1	bug fix: clicking anywhere on bar didn't update value; nor did it update color in follow bar, for which a couple of constraint issues were also fixed (24.01.2015)
+		2.1.0	removed snap properties hard & onlyOnDrop in favour of snap.type; also snap.markers became snap.marks; added totalRange property & runtime values thereof returned; destroy method now chainable for jQuery; fixed minor scoping issue; modified colorShift handling; significant changes with regards to data entered and data received; replaced setInterval with event listener (+ IE polyfill); removed drag and drop callbacks from initiator function; added slider data to onload callback; jQuery: removed unnecessary removeEventListeners for IE that caused an error on destroy (16.11.2014)
 		2.0.0	major improvements in code structure, stability, accuracy; changed color shift property (see usage); only corresponding arrow keys for horizontal or vertical; added windows phone support; added retina image handling; fixed issues in destroy method; added shift + arrow keys (30.10.2014)
 		1.10.0	added keyboard functionality (03.01.2014)
 		1.9.1	bug fix: when button is pressed but released off button, button action now gets cleared (19.12.2013)
@@ -712,7 +714,7 @@ version:	2.0.0
 					// orientation
 					$(window).on('orientationchange.'+guid, eventWindowResize);
 				}
-				
+
 				$(document).on(mEvt.move+'.'+guid, function(e){
 					if (!is_down) return false;
 
@@ -786,6 +788,8 @@ version:	2.0.0
 						// snap to
 						if (snaps > 0 && snaps < 10 && (snapType == 'soft' || snapType == 'hard'))	// min 1, max 9
 							result = doSnap((snapType == 'hard') ? 'hard' : 'soft', m);
+						else
+							result = (m < 0 ? 0 : m);
 
 						if (options.drop) options.drop(updateME(getPercent(result)));
 						if (options.drag && state == 'active') options.drag(updateME(getPercent(result)));
@@ -856,23 +860,35 @@ version:	2.0.0
 					e.preventDefault();
 					if (e.returnValue) e.returnValue = false;	// wp
 
+					var kw = knob.width(),
+						sw = self.width();
+
 					is_down = true;
 					self.data('state', 'active');
 
-					if (!isMobile && snapType != 'soft'){
+					if (!isMobile && snapType !== 'hard'){
 						var x = null;
 						if (vert){
-							var base = self.position().top + self.width();
+							var base = self.position().top + sw;
 							x = base - (e.pageY-2);
 						} else x = e.pageX - self.offset().left;
-						var m = x - (knob.width() / 2);	// true position of knob
+						var m = x - (kw / 2);	// true position of knob
+
+						// constraint
+						if (m < 0){
+							m = 0;
+							knob.css('left', '0');
+						} else if (m >= sw-kw){
+							m = sw-kw;
+							knob.css('left', sw-kw+'px');
+						}
 
 						knob.css('left', m+'px');
-						follow.css('width', m+(knob.width()/2)+'px');
+						follow.css('width', m+(kw/2)+'px');
 						
-						// constraint
-						if (m < 0) knob.css('left', '0');
-						else if (m >= self.width()-knob.width()) knob.css('left', self.width()-knob.width()+'px');
+
+						// color change
+						if (colorChangeBln) colorChange(getPercent(m));
 					}
 				};
 
