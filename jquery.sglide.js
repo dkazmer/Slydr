@@ -4,9 +4,10 @@
 
 author:		Daniel Kazmer - http://iframework.net
 created:	24.11.2012
-version:	2.1.1
+version:	2.1.2
 
 	version history:
+		2.1.2	bug fix: text inputs were not selectable by mouse-drag in Chrome for jQuery - a proper if statement in the document's mousemove event listener solved it, thereby possibly increasing performance (applied to both jQuery and standalone) (01.02.2015)
 		2.1.1	bug fix: clicking anywhere on bar didn't update value; nor did it update color in follow bar, for which a couple of constraint issues were also fixed (24.01.2015)
 		2.1.0	removed snap properties hard & onlyOnDrop in favour of snap.type; also snap.markers became snap.marks; added totalRange property & runtime values thereof returned; destroy method now chainable for jQuery; fixed minor scoping issue; modified colorShift handling; significant changes with regards to data entered and data received; replaced setInterval with event listener (+ IE polyfill); removed drag and drop callbacks from initiator function; added slider data to onload callback; jQuery: removed unnecessary removeEventListeners for IE that caused an error on destroy (16.11.2014)
 		2.0.0	major improvements in code structure, stability, accuracy; changed color shift property (see usage); only corresponding arrow keys for horizontal or vertical; added windows phone support; added retina image handling; fixed issues in destroy method; added shift + arrow keys (30.10.2014)
@@ -22,8 +23,8 @@ version:	2.1.1
 		0.3.1	more accurate snap markers; added color shifting (25.07.2013)
 		0.2.6	bug fix: constraints when dragging (20.12.2012)
 		0.2.5	bug fix: when knob is image, startAt now gets the correct knob width (13.12.2012)
-		0.2.0:	added disabled state (08.12.2012)
-		0.1.0:	created
+		0.2.0	added disabled state (08.12.2012)
+		0.1.0	created
 
 	usage:
 		apply the following to an empty DIV with a unique id
@@ -38,8 +39,7 @@ version:	2.1.1
 			pill:					// boolean - default: true
 			snap: {
 				marks		: false,
-				hard		: false,
-				onlyOnDrop	: false,
+				type		: false,
 				points		: 0
 			},
 			disabled:				// boolean - default: false
@@ -605,9 +605,8 @@ version:	2.1.1
 				var storedSnapValue = 's-1';
 				var doSnap = function(kind, m){
 					if (snaps > 0 && snaps < 10){	// min 1, max 9
-						var knobWidth = knob.width();
-						// var pctFive = self_width / 20 + 10;
-						var pctFive = self_width * (10-snaps) / 100 - 2;
+						var knobWidth = knob.width(),
+							pctFive = self_width * (10-snaps) / 100 - 2;
 
 						// % to px
 						var snapPixelValues = [];
@@ -716,59 +715,61 @@ version:	2.1.1
 				}
 
 				$(document).on(mEvt.move+'.'+guid, function(e){
-					if (!is_down) return false;
+					if (is_down){
+						e = e || event;	// ie fix
 
-					e = e || event;	// ie fix
+						// e.preventDefault();
+						// e.stopPropagation();
 
-					var x			= null,
-						knobWidth	= knob.width();
+						var x			= null,
+							knobWidth	= knob.width();
 
-					if (vert){
-						var base = self.position().top + self_width;
-						if (isMobile){
-							touchY = e.originalEvent.touches[0].pageY;
-							x = base - touchY;
-						} else x = base - e.pageY;
-					} else {
-						if (isMobile){
-							touchX = e.originalEvent.touches[0].pageX;
-							x = touchX - self.offset().left;
-						} else x = e.pageX - self.offset().left;
+						if (vert){
+							var base = self.position().top + self_width;
+							if (isMobile){
+								touchY = e.originalEvent.touches[0].pageY;
+								x = base - touchY;
+							} else x = base - e.pageY;
+						} else {
+							if (isMobile){
+								touchX = e.originalEvent.touches[0].pageX;
+								x = touchX - self.offset().left;
+							} else x = e.pageX - self.offset().left;
+						}
+
+						var stopper	= knobWidth / 2,
+							m		= x - stopper;
+
+						// if(event.preventDefault) event.preventDefault();
+						if (e.returnValue) e.returnValue = false;
+
+						// constraint & position
+						if (x <= stopper){
+							knob.css('left', '0');
+							follow.css('width', stopper+'px');
+						} else if (x >= self_width-stopper){
+							knob.css('left', (self_width-knobWidth)+'px');
+							follow.css('width', (self_width-stopper)+'px');
+						} else {
+							knob.css('left', (x-stopper)+'px');
+							follow.css('width', x+'px');
+							// if (!settings.snap.onlyOnDrop) doSnap('drag', m);
+							if (!snapType || snapType == 'hard') doSnap('drag', m);
+						}
+
+						result = knob[0].style.left;	//knob.css('left');
+						result = result.replace('px', '');
+
+						var state = self.data('state');
+
+						// update values
+						if (options.drag && state == 'active')
+							options.drag(updateME(getPercent(result)));
+
+						// color change
+						if (colorChangeBln && state == 'active')
+							colorChange(getPercent(result));
 					}
-
-					var stopper = knobWidth / 2;
-					var m = x - stopper;
-
-					// if(event.preventDefault) event.preventDefault();
-					if (e.returnValue) e.returnValue = false;
-
-					// constraint & position
-					if (x <= stopper){
-						knob.css('left', '0');
-						follow.css('width', stopper+'px');
-					} else if (x >= self_width-stopper){
-						knob.css('left', (self_width-knobWidth)+'px');
-						follow.css('width', (self_width-stopper)+'px');
-					} else {
-						knob.css('left', (x-stopper)+'px');
-						follow.css('width', x+'px');
-						// if (!settings.snap.onlyOnDrop) doSnap('drag', m);
-						if (!snapType || snapType == 'hard') doSnap('drag', m);
-					}
-
-					result = knob[0].style.left;	//knob.css('left');
-					result = result.replace('px', '');
-
-					var state = self.data('state');
-
-					// update values
-					if (options.drag && state == 'active')
-						options.drag(updateME(getPercent(result)));
-
-					// color change
-					if (colorChangeBln && state == 'active')
-						colorChange(getPercent(result));
-
 				}).on(mEvt.up+'.'+guid, function(e){
 					var state = self.data('state');
 					is_down = false;
@@ -781,9 +782,9 @@ version:	2.1.1
 							x = base - ((!isMobile ? e.pageY : touchY)-2);
 						} else x = (!isMobile ? e.pageX : touchX) - self.offset().left;
 						
-						var knobWidth	= knob.width();
-						var stopper		= knobWidth / 2;
-						var m			= x - stopper;	// true position of knob
+						var knobWidth	= knob.width(),
+							stopper		= knobWidth / 2,
+							m			= x - stopper;	// true position of knob
 
 						// snap to
 						if (snaps > 0 && snaps < 10 && (snapType == 'soft' || snapType == 'hard'))	// min 1, max 9

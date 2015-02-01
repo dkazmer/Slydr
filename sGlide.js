@@ -4,9 +4,10 @@
 
 author:		Daniel Kazmer - http://iframework.net
 created:	24.11.2012
-version:	2.1.1
+version:	2.1.2
 
 	version history:
+		2.1.2	bug fix: text inputs were not selectable by mouse-drag in Chrome for jQuery - a proper if statement in the document's mousemove event listener solved it, thereby possibly increasing performance (applied to both jQuery and standalone) (01.02.2015)
 		2.1.1	bug fix: clicking anywhere on bar didn't update value; nor did it update color in follow bar, for which a couple of constraint issues were also fixed (24.01.2015)
 		2.1.0	removed snap properties hard & onlyOnDrop in favour of snap.type; also snap.markers became snap.marks; added totalRange property & runtime values thereof returned; destroy method now chainable for jQuery; fixed minor scoping issue; modified colorShift handling; significant changes with regards to data entered and data received; replaced setInterval with event listener (+ IE polyfill); removed drag and drop callbacks from initiator function; added slider data to onload callback; jQuery: removed unnecessary removeEventListeners for IE that caused an error on destroy (16.11.2014)
 		2.0.0	major improvements in code structure, stability, accuracy; changed color shift property (see usage); only corresponding arrow keys for horizontal or vertical; added windows phone support; added retina image handling; fixed issues in destroy method; added shift + arrow keys (28.10.2014)
@@ -22,8 +23,8 @@ version:	2.1.1
 		0.3.1	more accurate snap markers; added color shifting (25.07.2013)
 		0.2.6	bug fix: constraints when dragging (20.12.2012)
 		0.2.5	bug fix: when knob is image, startAt now gets the correct knob width (13.12.2012)
-		0.2.0:	added disabled state (08.12.2012)
-		0.1.0:	created
+		0.2.0	added disabled state (08.12.2012)
+		0.1.0	created
 
 	usage:
 		pass an empty DIV, my_element, with a unique id to the following class
@@ -748,10 +749,9 @@ function sGlide(self, options){
 		var storedSnapValue = 's-1';
 		var doSnap = function(kind, m){
 			if (snaps > 0 && snaps < 10){	// min 1, max 9
-				var knobWidth = knob.offsetWidth;
-				var selfWidth = self.offsetWidth;
-				// var pctFive = selfWidth / 20 + 10;
-				var pctFive = selfWidth * (10-snaps) / 100 - 2;
+				var knobWidth	= knob.offsetWidth,
+					selfWidth	= self.offsetWidth,
+					pctFive		= selfWidth * (10-snaps) / 100 - 2;
 
 				// % to px
 				var snapPixelValues = [];
@@ -842,59 +842,60 @@ function sGlide(self, options){
 		}
 
 		eventDocumentMouseMove = function(e){
-			if (!is_down) return false;
-			e = e || event;	// ie fix
+			if (is_down){
+				e = e || event;	// ie fix
 
-			var x			= null,
-				selfWidth	= self.offsetWidth,
-				knobWidth	= knob.offsetWidth;
+				var x			= null,
+					selfWidth	= self.offsetWidth,
+					knobWidth	= knob.offsetWidth;
 
-			if (vert){
-				// MS bug: manually set offsetTop, otherwise try to get the vertical wrapper's offsetTop
-				if (window.navigator.msPointerEnabled && MSoffsetTop === null) MSoffsetTop = self.getBoundingClientRect().top;
-				else if (vmarks !== null && MSoffsetTop === null) MSoffsetTop = vmarks.offsetTop;
+				if (vert){
+					// MS bug: manually set offsetTop, otherwise try to get the vertical wrapper's offsetTop
+					if (window.navigator.msPointerEnabled && MSoffsetTop === null) MSoffsetTop = self.getBoundingClientRect().top;
+					else if (vmarks !== null && MSoffsetTop === null) MSoffsetTop = vmarks.offsetTop;
 
-				var base = (MSoffsetTop !== null ? MSoffsetTop : self.offsetTop) + selfWidth;
-				if (isMobile){
-					touchY = e.targetTouches[0].pageY;
-					x = base - touchY;
-				} else x = base - e.pageY;
-			} else {
-				if (isMobile){
-					touchX = e.targetTouches[0].pageX;
-					x = touchX - self.offsetLeft;
-				} else x = e.pageX - self.offsetLeft;
+					var base = (MSoffsetTop !== null ? MSoffsetTop : self.offsetTop) + selfWidth;
+					if (isMobile){
+						touchY = e.targetTouches[0].pageY;
+						x = base - touchY;
+					} else x = base - e.pageY;
+				} else {
+					if (isMobile){
+						touchX = e.targetTouches[0].pageX;
+						x = touchX - self.offsetLeft;
+					} else x = e.pageX - self.offsetLeft;
+				}
+
+				var stopper	= knobWidth / 2,
+					m		= x - stopper;
+
+				if (e.returnValue) e.returnValue = false;
+
+				// constraint
+				if (x <= stopper){
+					knob.style.left = '0';
+					follow.style.width = stopper+'px';
+				} else if (x >= selfWidth-stopper){
+					knob.style.left = (selfWidth-knobWidth)+'px';
+					follow.style.width = (selfWidth-stopper)+'px';
+				} else {
+					knob.style.left = (x-stopper)+'px';
+					follow.style.width = x+'px';
+					// if (!settings.snap.onlyOnDrop) doSnap('drag', m);
+					if (!snapType || snapType == 'hard') doSnap('drag', m);
+				}
+
+				result = knob.style.left;
+				result = result.replace('px', '');
+
+				// update values
+				if (options.drag && self.getAttribute('data-state') == 'active')
+					options.drag(updateME(getPercent(result)));
+
+				// color change
+				if (colorChangeBln && self.getAttribute('data-state') == 'active')
+					colorChange(getPercent(result));
 			}
-
-			var stopper = knobWidth / 2;
-			var m = x - stopper;
-
-			if (e.returnValue) e.returnValue = false;
-
-			// constraint
-			if (x <= stopper){
-				knob.style.left = '0';
-				follow.style.width = stopper+'px';
-			} else if (x >= selfWidth-stopper){
-				knob.style.left = (selfWidth-knobWidth)+'px';
-				follow.style.width = (selfWidth-stopper)+'px';
-			} else {
-				knob.style.left = (x-stopper)+'px';
-				follow.style.width = x+'px';
-				// if (!settings.snap.onlyOnDrop) doSnap('drag', m);
-				if (!snapType || snapType == 'hard') doSnap('drag', m);
-			}
-
-			result = knob.style.left;
-			result = result.replace('px', '');
-
-			// update values
-			if (options.drag && self.getAttribute('data-state') == 'active')
-				options.drag(updateME(getPercent(result)));
-
-			// color change
-			if (colorChangeBln && self.getAttribute('data-state') == 'active')
-				colorChange(getPercent(result));
 		};
 		eventDocumentMouseUp = function(e){
 			is_down = false;
@@ -908,9 +909,9 @@ function sGlide(self, options){
 					x = base - ((!isMobile ? e.pageY : touchY)-2);
 				} else x = (!isMobile ? e.pageX : touchX) - self.offsetLeft;
 				
-				var knobWidth	= knob.offsetWidth;
-				var stopper		= knobWidth / 2;
-				var m			= x - stopper;	// true position of knob
+				var knobWidth	= knob.offsetWidth,
+					stopper		= knobWidth / 2,
+					m			= x - stopper;	// true position of knob
 
 				// snap to
 				if (snaps > 0 && snaps < 10 && (snapType == 'soft' || snapType == 'hard'))	// min 1, max 9

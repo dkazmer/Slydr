@@ -22,15 +22,15 @@
 </style>
 
 <!-- <script type="text/javascript" src="polyfills.js"></script> -->
-<!-- <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
-<script type="text/javascript" src="jquery.sglide.js"></script> -->
-<script type="text/javascript" src="sglide.js"></script>
+<script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script type="text/javascript" src="jquery.sglide.js"></script>
+<!-- <script type="text/javascript" src="sglide.js"></script> -->
 <!-- <script type="text/javascript" src="../../~web~/sGlide/jquery.sglide.2.min.js"></script> -->
-<!-- <script type="text/javascript" src="../../~web~/sGlide/sglide.2.min.js"></script> -->
+<!-- <script type="text/javascript" src="../../~web~/sGlide/sglide.2.1.1.min.js"></script> -->
 
 <script type="text/javascript">
 	function run(){
-		sglideArr = [];
+		/*sglideArr = [];
 		// var elsArr = document.getElementsByClassName('slider_bar');
 		var elsArr = [document.getElementById('slider1'), document.getElementById('slider2')];
 
@@ -63,9 +63,9 @@
 			}));
 		}
 
-		console.log('sglideArr',sglideArr);
+		console.log('sglideArr',sglideArr);*/
 
-		/*$('.slider_bar').sGlide({
+		$('.slider_bar').sGlide({
 			'startAt': 50,
 			'width': 600,
 			'height': 22,
@@ -89,13 +89,14 @@
 			onButton: function(o){
 				console.log('> onButton',o);//,o.id,o);
 			}
-		});*/
+		});
 	};
 </script>
 
 </head><body onload="run()">
 
 	<div id="percent">%</div>
-	<div id="slider1" class="slider_bar" data-keys="shift" style="background-color:#069; border-radius:10px; height:40px"></div><br /><div id="slider2" class="slider_bar"></div>
+	<div id="slider1" class="slider_bar" data-keys="shift" style="background-color:#069; border-radius:10px; height:40px"></div><br /><!-- <div id="slider2" class="slider_bar"></div> -->
+	<br><input type="text" value="asdljkas dlkajsd lakjs dlasjd">
 
 </body></html>
