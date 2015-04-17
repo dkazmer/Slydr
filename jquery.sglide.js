@@ -916,6 +916,7 @@ version:	2.1.2
 					self.sGlide('startAt', num);
 
 					$(el).off('makeready.'+guid, setStartAt);
+					$(el).trigger('sGlide.ready')
 				};
 
 				// Listen for image loaded
