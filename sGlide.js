@@ -541,7 +541,7 @@ function sGlide(self, options){
 			var snapValues = [0];
 			var step = increment;
 
-			//on some browsers know.width = 0 which makes increment 0 and creates an infinite loop
+			//on some browsers knob.width = 0 which makes increment 0 and creates an infinite loop
 			if (increment < 1) {
 				increment = 1
 			} 
