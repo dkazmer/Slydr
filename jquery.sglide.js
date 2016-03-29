@@ -4,9 +4,10 @@
 
 author:		Daniel Kazmer - http://iframework.net
 created:	24.11.2012
-version:	2.1.2
+version:	2.2.0
 
 	version history:
+		2.2.0	added snap sensitivity - accepts decimal values between 1 & 3 inclusive
 		2.1.2	bug fix: text inputs were not selectable by mouse-drag in Chrome for jQuery - a proper if statement in the document's mousemove event listener solved it, thereby possibly increasing performance (applied to both jQuery and standalone) (01.02.2015)
 		2.1.1	bug fix: clicking anywhere on bar didn't update value; nor did it update color in follow bar, for which a couple of constraint issues were also fixed (24.01.2015)
 		2.1.0	removed snap properties hard & onlyOnDrop in favour of snap.type; also snap.markers became snap.marks; added totalRange property & runtime values thereof returned; destroy method now chainable for jQuery; fixed minor scoping issue; modified colorShift handling; significant changes with regards to data entered and data received; replaced setInterval with event listener (+ IE polyfill); removed drag and drop callbacks from initiator function; added slider data to onload callback; jQuery: removed unnecessary removeEventListeners for IE that caused an error on destroy (16.11.2014)
@@ -607,6 +608,8 @@ version:	2.1.2
 					if (snaps > 0 && snaps < 10){	// min 1, max 9
 						var knobWidth = knob.width(),
 							pctFive = self_width * (10-snaps) / 100 - 2;
+							// apply sensitivity - accepts decimal values between 1 & 3 inclusive
+							pctFive -= (3 - (settings.snap.sensitivity && settings.snap.sensitivity > 0 && settings.snap.sensitivity < 4 ? settings.snap.sensitivity : 2)) * 16;
 
 						// % to px
 						var snapPixelValues = [];

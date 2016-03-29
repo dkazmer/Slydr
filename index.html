@@ -76,27 +76,31 @@
 			// 'locked': true,
 			'snap': {
 				'marks': true,
-				'type': 'soft',
-				'points': 3
+				// 'type': 'soft',
+				'points': 3,
+				'sensitivity': 1.5
 			},
-			'colorShift': ['#3a4d31', '#7bb560'],
+			// 'colorShift': ['#3a4d31', '#7bb560'],
 			// 'vertical': true,
-			'buttons': true,
+			// 'buttons': true,
 			// 'disabled': true,
 			// drag: function(o){
 			// 	console.log('> drag',o);//,o.id,o);
 			// },
-			onButton: function(o){
+			drop: function(o){
 				console.log('> onButton',o);//,o.id,o);
 			}
 		});
 	};
+	// 2:	45.91
+	// 1.5: 47.1
+	// 1:	48.63
 </script>
 
 </head><body onload="run()">
 
 	<div id="percent">%</div>
 	<div id="slider1" class="slider_bar" data-keys="shift" style="background-color:#069; border-radius:10px; height:40px"></div><br /><!-- <div id="slider2" class="slider_bar"></div> -->
-	<br><input type="text" value="asdljkas dlkajsd lakjs dlasjd">
+	<!-- <br><input type="text" value="asdljkas dlkajsd lakjs dlasjd" /> -->
 
 </body></html>
