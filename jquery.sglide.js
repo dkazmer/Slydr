@@ -549,13 +549,13 @@ version:	2.2.0
 						var p = intvl;
 						for (var i = 0; i < settings.snap.points; i++){
 							if (intvl >= THE_VALUE){
-								if (direction == '>')	THE_VALUE = (Math.round(intvl) > Math.round(THE_VALUE) ? intvl : intvl+p);
+								if (direction === '>')	THE_VALUE = (Math.round(intvl) > Math.round(THE_VALUE) ? intvl : intvl+p);
 								else					THE_VALUE = intvl-p;
 								break;
 							} else intvl += p;
 						}
 					} else {
-						if (direction == '>')	THE_VALUE += (smoothBln ? 1 : 10);
+						if (direction === '>')	THE_VALUE += (smoothBln ? 1 : 10);
 						else					THE_VALUE -= (smoothBln ? 1 : 10);
 					}
 
@@ -587,7 +587,7 @@ version:	2.2.0
 					btn_is_down = false;
 					clearTimeout(btn_timers);
 				}, knob_adjust = 0, btn_is_down = false, btn_timers = null;
-				var btn_snap = (settings.snap.points > 0 && settings.snap.points <= 9 && (snapType == 'hard' || snapType == 'soft'));
+				var btn_snap = (settings.snap.points > 0 && settings.snap.points <= 9 && (snapType === 'hard' || snapType === 'soft'));
 
 				//------------------------------------------------------------------------------------------------------------------------------------
 				// events
@@ -606,44 +606,47 @@ version:	2.2.0
 				var storedSnapValue = 's-1';
 				var doSnap = function(kind, m){
 					if (snaps > 0 && snaps < 10){	// min 1, max 9
-						var knobWidth = knob.width(),
-							pctFive = self_width * (10-snaps) / 100 - 2;
-							// apply sensitivity - accepts decimal values between 1 & 3 inclusive
-							pctFive -= (3 - (settings.snap.sensitivity && settings.snap.sensitivity > 0 && settings.snap.sensitivity < 4 ? settings.snap.sensitivity : 2)) * 16;
+						var sense = (settings.snap.sensitivity !== undefined ? settings.snap.sensitivity : 2);
 
-						// % to px
-						var snapPixelValues = [];
-						for (var i = 0; i < snapPctValues.length; i++){
-							snapPixelValues.push((self_width - knobWidth) * snapPctValues[i] / 100);
-							// snapPixelValues.push(snapValues[i] - knobWidth*i);
-						}
+						// although snap is enabled, sensitivity may be set to nill, in which case marks are drawn but won't snap to
+						if (sense || snapType === 'hard' || snapType === 'soft'){
+							var knobWidth	= knob.width(),
+								snapOffset	= (sense && sense > 0 && sense < 4 ? (sense + 1) * 5 : 15) - 3;
 
-						// get closest px mark, and set %
-						var closest = null, pctVal = 0;
-						$.each(snapPixelValues, function(i){
-							if (closest === null || Math.abs(this - m) < Math.abs(closest - m)){
-								closest = this | 0;
-								pctVal = snapPctValues[i];
+							// % to px
+							var snapPixelValues = [];
+							for (var i = 0; i < snapPctValues.length; i++){
+								snapPixelValues.push((self_width - knobWidth) * snapPctValues[i] / 100);
+								// snapPixelValues.push(snapValues[i] - knobWidth*i);
 							}
-						});
 
-						// physically snap it
-						if (kind == 'drag'){
-							if (snapType == 'hard'){
-								updateSnap(closest, (closest+knobWidth/2));
-								doOnSnap(closest, pctVal);
-							} else {
-								if (Math.round(Math.abs(closest - m)) < pctFive){
+							// get closest px mark, and set %
+							var closest = null, pctVal = 0;
+							$.each(snapPixelValues, function(i){
+								if (closest === null || Math.abs(this - m) < Math.abs(closest - m)){
+									closest = this | 0;
+									pctVal = snapPctValues[i];
+								}
+							});
+
+							// physically snap it
+							if (kind === 'drag'){
+								if (snapType === 'hard'){
 									updateSnap(closest, (closest+knobWidth/2));
 									doOnSnap(closest, pctVal);
-								} else storedSnapValue = 's-1';
+								} else {
+									if (Math.round(Math.abs(closest - m)) < snapOffset){
+										updateSnap(closest, (closest+knobWidth/2));
+										doOnSnap(closest, pctVal);
+									} else storedSnapValue = 's-1';
+								}
+							} else if (kind === 'hard'){
+								updateSnap(closest, (closest+knobWidth/2));
+								return closest;
+							} else {
+								updateSnap(closest, (closest+knobWidth/2), true);
+								return closest;
 							}
-						} else if (kind == 'hard'){
-							updateSnap(closest, (closest+knobWidth/2));
-							return closest;
-						} else {
-							updateSnap(closest, (closest+knobWidth/2), true);
-							return closest;
 						}
 					}
 				}, doOnSnap = function(a, b){ // callback: onSnap
@@ -682,10 +685,10 @@ version:	2.2.0
 								if (keyCtrlShift && !e.shiftKey) return false;
 							}
 
-							if (keycode == codeBack){
+							if (keycode === codeBack){
 								eventPlusMinusMouseDown('<');
 								keydown = true;
-							} else if (keycode == codeFwd){
+							} else if (keycode === codeFwd){
 								eventPlusMinusMouseDown('>');
 								keydown = true;
 							}
@@ -757,46 +760,45 @@ version:	2.2.0
 							knob.css('left', (x-stopper)+'px');
 							follow.css('width', x+'px');
 							// if (!settings.snap.onlyOnDrop) doSnap('drag', m);
-							if (!snapType || snapType == 'hard') doSnap('drag', m);
+							if (!snapType || snapType === 'hard') doSnap('drag', m);
 						}
 
-						result = knob[0].style.left;	//knob.css('left');
-						result = result.replace('px', '');
+						result = knob.position().left;	// was knob[0].style.left
 
 						var state = self.data('state');
 
 						// update values
-						if (options.drag && state == 'active')
+						if (options.drag && state === 'active')
 							options.drag(updateME(getPercent(result)));
 
 						// color change
-						if (colorChangeBln && state == 'active')
+						if (colorChangeBln && state === 'active')
 							colorChange(getPercent(result));
 					}
 				}).on(mEvt.up+'.'+guid, function(e){
 					var state = self.data('state');
 					is_down = false;
-					if (state == 'active'){
+					if (state === 'active'){
 						e = e || event;	// ie fix
-						var x = null, base = 0;
+						/*var x = null, base = 0;
 
 						if (vert){
 							base = self.position().top + self_width;
 							x = base - ((!isMobile ? e.pageY : touchY)-2);
-						} else x = (!isMobile ? e.pageX : touchX) - self.offset().left;
+						} else x = (!isMobile ? e.pageX : touchX) - self.offset().left;*/
 						
-						var knobWidth	= knob.width(),
-							stopper		= knobWidth / 2,
-							m			= x - stopper;	// true position of knob
+						var // knobWidth	= knob.width(),
+							// stopper		= knobWidth / 2,
+							m			= knob.position().left;//x - stopper;	// true position of knob
 
 						// snap to
-						if (snaps > 0 && snaps < 10 && (snapType == 'soft' || snapType == 'hard'))	// min 1, max 9
-							result = doSnap((snapType == 'hard') ? 'hard' : 'soft', m);
+						if (snaps > 0 && snaps < 10 && (snapType === 'soft' || snapType === 'hard'))	// min 1, max 9
+							result = doSnap((snapType === 'hard') ? 'hard' : 'soft', m);
 						else
 							result = (m < 0 ? 0 : m);
 
 						if (options.drop) options.drop(updateME(getPercent(result)));
-						if (options.drag && state == 'active') options.drag(updateME(getPercent(result)));
+						if (options.drag) options.drag(updateME(getPercent(result)));
 						self.data('state', 'inactive');
 
 						// color change
@@ -817,7 +819,7 @@ version:	2.2.0
 				var sendData = {};
 				var getPercent = function(o){
 					var cstm = 0;
-					o = parseFloat(o, 10);
+					// o = parseFloat(o, 10);	// o shouldn't be string
 
 					// calculate percentage
 					var pct = o / (self[0].offsetWidth - knob[0].offsetWidth) * 100;

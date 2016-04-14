@@ -17,7 +17,7 @@
 /*#slider1 {transform-origin: 460px 260px !important;}*/
 /*#slider2 {margin: -130px -290px !important;}*/
 /*#slider1 {margin-left: 60px !important;}*/
-/*.follow_bar {background-color: #960;}*/
+.follow_bar {background-color: #363;}
 #slider1_vert-marks {margin-left: 60px !important;}
 </style>
 
@@ -32,7 +32,7 @@
 	function run(){
 		/*sglideArr = [];
 		// var elsArr = document.getElementsByClassName('slider_bar');
-		var elsArr = [document.getElementById('slider1'), document.getElementById('slider2')];
+		var elsArr = [document.getElementById('slider1')];
 
 		for (var i = 0; i < elsArr.length; i++) {
 			sglideArr.push(new sGlide(elsArr[i], {
@@ -44,27 +44,28 @@
 				// 'pill': false,
 				'snap': {
 					'marks': true,
-					// 'type': 'soft',
-					'points': 6
+					// 'type': 'hard',
+					'points': 7
+					// 'sensitivity': 1
 				},
-				'colorShift': ['#3a4d31', '#7bb560'],
+				// 'colorShift': ['#3a4d31', '#7bb560'],
 				// 'vertical': true,
-				'buttons': true,
-				'totalRange': [58,102],
+				// 'buttons': true,
+				'totalRange': [-58,102],
 				// 'disabled': true,
 				drop: function(o){
 					console.log('> drop',o);
 					// console.log(o.id,o.value, this.element);
 					// document.getElementById('percent').innerHTML = o.id+': '+Math.round(o.value) + '%';
 				},
-				onSnap: function(o){
-					console.log('> snap',o);
+				drag: function(o){
+					console.log('> drag',o.percent);
 				}
 			}));
 		}
 
 		console.log('sglideArr',sglideArr);*/
-
+		var $pct = $('#percent');
 		$('.slider_bar').sGlide({
 			'startAt': 50,
 			'width': 600,
@@ -72,29 +73,27 @@
 			'unit': 'px',
 			// 'image': 'img/knob_.png',
 			// 'pill': false,
-			'totalRange': [58,102],
+			'totalRange': [-58,102],
 			// 'locked': true,
 			'snap': {
 				'marks': true,
-				// 'type': 'soft',
-				'points': 3,
-				'sensitivity': 1.5
+				// 'type': 'hard',
+				'points': 7
+				// 'sensitivity': 3
 			},
 			// 'colorShift': ['#3a4d31', '#7bb560'],
 			// 'vertical': true,
 			// 'buttons': true,
 			// 'disabled': true,
-			// drag: function(o){
-			// 	console.log('> drag',o);//,o.id,o);
-			// },
+			drag: function(o){
+				// console.log('> drag',o);//,o.id,o);
+				$pct.text(Math.round(o.percent)+'%');
+			},
 			drop: function(o){
 				console.log('> onButton',o);//,o.id,o);
 			}
 		});
 	};
-	// 2:	45.91
-	// 1.5: 47.1
-	// 1:	48.63
 </script>
 
 </head><body onload="run()">

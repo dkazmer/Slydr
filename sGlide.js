@@ -7,6 +7,7 @@ created:	24.11.2012
 version:	2.1.2
 
 	version history:
+		2.2.0	added snap sensitivity - accepts decimal values between 1 & 3 inclusive
 		2.1.2	bug fix: text inputs were not selectable by mouse-drag in Chrome for jQuery - a proper if statement in the document's mousemove event listener solved it, thereby possibly increasing performance (applied to both jQuery and standalone) (01.02.2015)
 		2.1.1	bug fix: clicking anywhere on bar didn't update value; nor did it update color in follow bar, for which a couple of constraint issues were also fixed (24.01.2015)
 		2.1.0	removed snap properties hard & onlyOnDrop in favour of snap.type; also snap.markers became snap.marks; added totalRange property & runtime values thereof returned; destroy method now chainable for jQuery; fixed minor scoping issue; modified colorShift handling; significant changes with regards to data entered and data received; replaced setInterval with event listener (+ IE polyfill); removed drag and drop callbacks from initiator function; added slider data to onload callback; jQuery: removed unnecessary removeEventListeners for IE that caused an error on destroy (16.11.2014)
@@ -330,9 +331,8 @@ function sGlide(self, options){
 			'snap'			: {
 				'marks'		: false,
 				'type'		: false,
-				// 'hard'		: false,
-				// 'onlyOnDrop': false,
-				'points'	: 0
+				'points'	: 0,
+				'sensitivity': 2
 			},
 			'disabled'		: false,
 			'colorShift'	: [],
@@ -674,13 +674,13 @@ function sGlide(self, options){
 				var p = intvl;
 				for (var i = 0; i < settings.snap.points; i++){
 					if (intvl >= THE_VALUE){
-						if (direction == '>')	THE_VALUE = (Math.round(intvl) > Math.round(THE_VALUE) ? intvl : intvl+p);
+						if (direction === '>')	THE_VALUE = (Math.round(intvl) > Math.round(THE_VALUE) ? intvl : intvl+p);
 						else					THE_VALUE = intvl-p;
 						break;
 					} else intvl += p;
 				}
 			} else {
-				if (direction == '>')	THE_VALUE+=(smoothBln ? 1 : 10);
+				if (direction === '>')	THE_VALUE+=(smoothBln ? 1 : 10);
 				else					THE_VALUE-=(smoothBln ? 1 : 10);
 			}
 
@@ -710,7 +710,7 @@ function sGlide(self, options){
 			btn_is_down = false;
 			clearTimeout(btn_timers);
 		}, knob_adjust = 0, btn_is_down = false, btn_timers = null;
-		var btn_snap = (settings.snap.points > 0 && settings.snap.points <= 9 && (snapType == 'hard' || snapType == 'soft'));
+		var btn_snap = (settings.snap.points > 0 && settings.snap.points <= 9 && (snapType === 'hard' || snapType === 'soft'));
 
 		// button and arrow key events
 		eventPlusMinusMouseUp	= btnClearAction;
@@ -749,42 +749,47 @@ function sGlide(self, options){
 		var storedSnapValue = 's-1';
 		var doSnap = function(kind, m){
 			if (snaps > 0 && snaps < 10){	// min 1, max 9
-				var knobWidth	= knob.offsetWidth,
-					selfWidth	= self.offsetWidth,
-					pctFive		= selfWidth * (10-snaps) / 100 - 2;
+				var sense = settings.snap.sensitivity;
 
-				// % to px
-				var snapPixelValues = [];
-				for (var j = 0; j < snapPctValues.length; j++){
-					snapPixelValues.push((selfWidth - knobWidth) * snapPctValues[j] / 100);
-				}
+				// although snap is enabled, sensitivity may be set to nill, in which case marks are drawn but won't snap to
+				if (sense || snapType === 'hard' || snapType === 'soft'){
+					var knobWidth	= knob.offsetWidth,
+						selfWidth	= self.offsetWidth,
+						snapOffset	= (sense && sense > 0 && sense < 4 ? (sense + 1) * 5 : 15) - 3;
 
-				// get closest px mark, and set %
-				var closest = null, pctVal = 0;
-				for (var i = 0; i < snapPixelValues.length; i++) {
-					if (closest === null || Math.abs(snapPixelValues[i] - m) < Math.abs(closest - m)){
-						closest = snapPixelValues[i];
-						pctVal = snapPctValues[i];
+					// % to px
+					var snapPixelValues = [];
+					for (var j = 0; j < snapPctValues.length; j++){
+						snapPixelValues.push((selfWidth - knobWidth) * snapPctValues[j] / 100);
 					}
-				}
 
-				// physically snap it
-				if (kind == 'drag'){
-					if (snapType == 'hard'){
-						knob.style.left = closest+'px';
-						follow.style.width = closest+knobWidth/2+'px';
-						doOnSnap(closest, pctVal);
-					} else {
-						if (Math.round(Math.abs(closest - m)) < pctFive){
+					// get closest px mark, and set %
+					var closest = null, pctVal = 0;
+					for (var i = 0; i < snapPixelValues.length; i++) {
+						if (closest === null || Math.abs(snapPixelValues[i] - m) < Math.abs(closest - m)){
+							closest = snapPixelValues[i];
+							pctVal = snapPctValues[i];
+						}
+					}
+
+					// physically snap it
+					if (kind === 'drag'){
+						if (snapType === 'hard'){
 							knob.style.left = closest+'px';
 							follow.style.width = closest+knobWidth/2+'px';
 							doOnSnap(closest, pctVal);
-						} else storedSnapValue = 's-1';
+						} else {
+							if (Math.round(Math.abs(closest - m)) < snapOffset){
+								knob.style.left = closest+'px';
+								follow.style.width = closest+knobWidth/2+'px';
+								doOnSnap(closest, pctVal);
+							} else storedSnapValue = 's-1';
+						}
+					} else {
+						knob.style.left = closest+'px';
+						follow.style.width = closest+knobWidth/2+'px';
+						return closest;
 					}
-				} else {
-					knob.style.left = closest+'px';
-					follow.style.width = closest+knobWidth/2+'px';
-					return closest;
 				}
 			}
 		}, doOnSnap = function(a, b){ // callback: onSnap
@@ -810,10 +815,10 @@ function sGlide(self, options){
 						if (keyCtrlShift && !e.shiftKey) return false;
 					}
 
-					if (keycode == codeBack){
+					if (keycode === codeBack){
 						eventMinusMouseDown();
 						keydown = true;
-					} else if (keycode == codeFwd){
+					} else if (keycode === codeFwd){
 						eventPlusMouseDown();
 						keydown = true;
 					}
@@ -882,45 +887,47 @@ function sGlide(self, options){
 					knob.style.left = (x-stopper)+'px';
 					follow.style.width = x+'px';
 					// if (!settings.snap.onlyOnDrop) doSnap('drag', m);
-					if (!snapType || snapType == 'hard') doSnap('drag', m);
+					if (!snapType || snapType === 'hard') doSnap('drag', m);
 				}
 
-				result = knob.style.left;
-				result = result.replace('px', '');
+				result = knob.offsetLeft; // was knob.style.left;
+				// result = result.replace('px', '');
+
+				var state = self.getAttribute('data-state');
 
 				// update values
-				if (options.drag && self.getAttribute('data-state') == 'active')
+				if (options.drag && state === 'active')
 					options.drag(updateME(getPercent(result)));
 
 				// color change
-				if (colorChangeBln && self.getAttribute('data-state') == 'active')
+				if (colorChangeBln && state === 'active')
 					colorChange(getPercent(result));
 			}
 		};
 		eventDocumentMouseUp = function(e){
 			is_down = false;
-			if (self.getAttribute('data-state') == 'active'){
+			if (self.getAttribute('data-state') === 'active'){
 				e = e || event;	// ie fix
-				var x = null, base = 0, selfWidth = self.offsetWidth;
+				/*var x = null, base = 0, selfWidth = self.offsetWidth;
 
 				if (vert){
 					// base = self.offsetTop + selfWidth;
 					base = (!window.navigator.msPointerEnabled ? self.offsetTop : self.getBoundingClientRect().top) + selfWidth;
 					x = base - ((!isMobile ? e.pageY : touchY)-2);
-				} else x = (!isMobile ? e.pageX : touchX) - self.offsetLeft;
+				} else x = (!isMobile ? e.pageX : touchX) - self.offsetLeft;*/
 				
-				var knobWidth	= knob.offsetWidth,
-					stopper		= knobWidth / 2,
-					m			= x - stopper;	// true position of knob
+				var // knobWidth	= knob.offsetWidth,
+					// stopper		= knobWidth / 2,
+					m			= knob.offsetLeft;//x - stopper;	// true position of knob
 
 				// snap to
-				if (snaps > 0 && snaps < 10 && (snapType == 'soft' || snapType == 'hard'))	// min 1, max 9
+				if (snaps > 0 && snaps < 10 && (snapType === 'soft' || snapType === 'hard'))	// min 1, max 9
 					result = doSnap('drop', m);
 				else
 					result = (m < 0 ? 0 : m);
 
 				if (options.drop) options.drop(updateME(getPercent(result)));
-				if (options.drag && self.getAttribute('data-state') == 'active') options.drag(updateME(getPercent(result)));
+				if (options.drag) options.drag(updateME(getPercent(result)));
 				self.setAttribute('data-state', 'inactive');
 
 				// color change
@@ -950,7 +957,7 @@ function sGlide(self, options){
 		var sendData = {'percent': null};
 		var getPercent = function(o){
 			var cstm = 0;
-			o = parseFloat(o, 10);
+			// o = parseFloat(o, 10);	// o shouldn't be string
 
 			// calculate percentage
 			var pct = o / (self.offsetWidth - knob.offsetWidth) * 100;
