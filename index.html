@@ -89,8 +89,8 @@
 				// console.log('> drag',o);//,o.id,o);
 				$pct.text(Math.round(o.percent)+'%');
 			},
-			drop: function(o){
-				console.log('> onButton',o);//,o.id,o);
+			onSnap: function(o){
+				console.log('> onButton',o.percent);//,o.id,o);
 			}
 		});
 	};

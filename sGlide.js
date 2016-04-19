@@ -2,9 +2,9 @@
 
 /***********************************************************************************
 
-author:		Daniel Kazmer - http://iframework.net
+author:		Daniel Kazmer - http://webshifted.com
 created:	24.11.2012
-version:	2.1.2
+version:	2.2.0
 
 	version history:
 		2.2.0	added snap sensitivity - accepts decimal values between 1 & 3 inclusive
@@ -41,7 +41,8 @@ version:	2.1.2
 			snap: {
 				marks		: false,
 				type		: false,
-				points		: 0
+				points		: 0,
+				sensitivity	: 0
 			},
 			disabled:				// boolean - default: false
 			colorShift:				// array of 2 css color values
