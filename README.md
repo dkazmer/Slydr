@@ -1,7 +1,7 @@
 sGlide
 ======
 
-sGlide is a jQuery- or standalone plugin that generates a simple, light-weight, feature-rich and mobile-ready slider, which can be easily customized and styled using regular CSS. Visit http://iframework.net/sGlide/
+sGlide is a jQuery- or standalone plugin that generates a simple, light-weight, feature-rich and mobile-ready slider, which can be easily customized and styled using regular CSS. Visit http://webshifted.com/sGlide/
 
 Quickstart Guide: apply the following to an empty DIV with a unique id.
 
