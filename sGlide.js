@@ -177,6 +177,7 @@ function sGlide(self, options){
 		self.removeChild(follow);
 		self.removeAttribute('style');
 		self.removeAttribute('data-state');
+		self.classList.remove('vertical');
 
 		for (var i in this) delete this[i];
 	};
@@ -615,6 +616,7 @@ function sGlide(self, options){
 				css(self, {'filter': 'progid:DXImageTransform.Microsoft.BasicImage(rotation=3)'});
 				css(self, {'transform-origin': vertWidth+'px 0'}, cssPrefixes);
 			}
+			self.classList.add('vertical');
 		};
 
 		// -----------

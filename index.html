@@ -33,6 +33,7 @@
 		/*sglideArr = [];
 		// var elsArr = document.getElementsByClassName('slider_bar');
 		var elsArr = [document.getElementById('slider1')];
+		var pct = document.getElementById('percent');
 
 		for (var i = 0; i < elsArr.length; i++) {
 			sglideArr.push(new sGlide(elsArr[i], {
@@ -49,17 +50,18 @@
 					// 'sensitivity': 1
 				},
 				// 'colorShift': ['#3a4d31', '#7bb560'],
-				// 'vertical': true,
+				'vertical': true,
 				// 'buttons': true,
 				'totalRange': [-58,102],
 				// 'disabled': true,
 				drop: function(o){
-					console.log('> drop',o);
+					// console.log('> drop',o);
 					// console.log(o.id,o.value, this.element);
 					// document.getElementById('percent').innerHTML = o.id+': '+Math.round(o.value) + '%';
 				},
 				drag: function(o){
 					console.log('> drag',o.percent);
+					pct.innerHTML = o.id+': '+Math.round(o.percent) + '%';
 				}
 			}));
 		}
@@ -90,7 +92,7 @@
 				$pct.text(Math.round(o.percent)+'%');
 			},
 			onSnap: function(o){
-				console.log('> onButton',o.percent);//,o.id,o);
+				// console.log('> onButton',o.percent);//,o.id,o);
 			}
 		});
 	};

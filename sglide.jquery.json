@@ -14,11 +14,11 @@
         "arrow",
         "keys"
     ],
-    "version": "2.1.2",
+    "version": "2.2.0",
     "author": {
         "name": "Daniel Kazmer",
-        "email": "dk@iframework.net",
-        "url": "http://iframework.net"
+        "email": "dkazmer@live.ca",
+        "url": "http://webshifted.com"
     },
     "licenses": [
         {
@@ -29,7 +29,7 @@
     "bugs": "https://github.com/dkazmer/sGlide/issues",
     "homepage": "https://github.com/dkazmer/sGlide",
     "docs": "https://github.com/dkazmer/sGlide",
-    "demo": "http://iframework.net/sGlide/",
+    "demo": "http://webshifted.com/sGlide/",
     "dependencies": {
         "jquery": ">=1.7"
     }

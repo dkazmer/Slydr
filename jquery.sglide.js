@@ -5,6 +5,7 @@
 author:		Daniel Kazmer - http://webshifted.com
 created:	24.11.2012
 version:	2.2.0
+test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 	version history:
 		2.2.0	added snap sensitivity - accepts decimal values between 0 & 3 inclusive
@@ -116,7 +117,7 @@ version:	2.2.0
 				self.off(mEvt.down);
 				self.children('.slider_knob').off(mEvt.up).off(mEvt.down).remove();
 				self.children('.follow_bar').off(mEvt.down).remove();
-				self.removeAttr('style');
+				self.removeAttr('style').removeClass('vertical');
 			});
 			return this;
 		},
@@ -492,6 +493,7 @@ version:	2.2.0
 							'backface-visibility': 'hidden'
 						}).css(cssRotate);
 					}
+					self.addClass('vertical');
 				};
 
 				// -----------
@@ -764,7 +766,10 @@ version:	2.2.0
 							if (!snapType || snapType === 'hard') doSnap('drag', m);
 						}
 
-						result = knob.position().left;	// was knob[0].style.left
+						// result = knob.position().left;	// was knob[0].style.left
+						// result = self_width - knob.position().top - knobWidth;
+						// result = (vert ? self_width - knob.position().top - knobWidth : knob.position().left);
+						result = knob[0].offsetLeft;
 
 						var state = self.data('state');
 
@@ -790,7 +795,9 @@ version:	2.2.0
 						
 						var // knobWidth	= knob.width(),
 							// stopper		= knobWidth / 2,
-							m			= knob.position().left;//x - stopper;	// true position of knob
+							// m			= knob.position().left;//x - stopper;	// true position of knob
+							// m			= (vert ? self_width - knob.position().top - knobWidth : knob.position().left);
+							m			= knob[0].offsetLeft;
 
 						// snap to
 						if (snaps > 0 && snaps < 10 && (snapType === 'soft' || snapType === 'hard'))	// min 1, max 9
