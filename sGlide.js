@@ -407,16 +407,14 @@ function sGlide(self, options){
 			}
 
 			knob.innerHTML = '<img src="'+img+'" style="visibility:hidden" />';
-			var imgEl = knob.childNodes[0];
-			imgEl.onload = function(){
-				if (retina){
-					imgEl.style.width = (imgEl.offsetWidth / 2) + 'px';
-					// imgEl.style.height = (imgEl.offsetHeight / 2) + 'px';
-				}
+			knob.childNodes[0].onload = function(){
+				if (retina)
+					this.style.width = (this.offsetWidth / 2) + 'px';
+					// this.style.height = (this.offsetHeight / 2) + 'px';
 
 				// determine knob image style requirements
-				var thisHeight = imgEl.offsetHeight;
-				knob_width = imgEl.offsetWidth+'px';
+				var thisHeight = this.offsetHeight;
+				knob_width = this.offsetWidth+'px';
 				knob_height = thisHeight+'px';
 				knob_bg = 'url('+img+') no-repeat';
 
@@ -438,7 +436,7 @@ function sGlide(self, options){
 					'border-radius': r_corners ? thisHeight / 2 + 'px' : '0'
 				});
 
-				knob.removeChild(imgEl);
+				knob.removeChild(this);
 
 				// bar height less than that of knob
 				if (thisHeight > settings.height){

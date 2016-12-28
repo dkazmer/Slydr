@@ -278,17 +278,21 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					knob.html('<img src="'+img+'" style="visibility:hidden; position:absolute" />');
 					// self_height = 'auto';
 					knob.children('img').load(function(){
-						var imgEl = $(this);
+						// this is img element
 
 						if (retina){
-							imgEl[0].style.width = (imgEl[0].offsetWidth / 2) + 'px';
+							this.style.width = (this.offsetWidth / 2) + 'px';
 							// imgEl.style.height = (imgEl.offsetHeight / 2) + 'px';
+							// knob.css('width', 'auto');
+							var thisHeight = (this.naturalHeight / 2);
+							knob_width = (this.naturalWidth / 2)+'px';
+							knob_height = thisHeight+'px';
+						} else {
+							var thisHeight = this.naturalHeight;
+							knob_width = this.naturalWidth+'px';
+							knob_height = thisHeight+'px';
 						}
 
-						// knob.css('width', 'auto');
-						var thisHeight = imgEl[0].naturalHeight;
-						knob_width = imgEl[0].naturalWidth+'px';
-						knob_height = thisHeight+'px';
 
 						knob_bg = 'url('+img+') no-repeat';
 						var knob_bg_styles = {
@@ -308,11 +312,12 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 							'border-radius': r_corners ? thisHeight / 2 + 'px' : '0'
 						});
 
-						imgEl.remove();
+						// imgEl.remove();
+						this.parentNode.removeChild(this);
 
 						if (thisHeight > settings.height){
 							var knobMarginValue = 0;
-							knobMarginValue = (thisHeight-settings.height)/2;
+							knobMarginValue = (thisHeight-settings.height) / 2;
 							self.css({
 								// 'margin-top': knobMarginValue+'px',
 								'height': settings.height+'px'
