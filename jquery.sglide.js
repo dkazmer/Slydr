@@ -430,6 +430,12 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					var increment = w / (snaps - 1);
 					var snapValues = [0];
 					var step = increment;
+
+					//on some browsers knob.width = 0 which makes increment 0 and creates an infinite loop
+					if (increment < 1) {
+						increment = 1
+					} 
+
 					while (step <= w+2){	// added 2px to fix glitch when drawing last mark at 7 or 8 snaps (accounts for decimal)
 						snapValues.push(step);
 						step += increment;
