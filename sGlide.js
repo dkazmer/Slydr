@@ -4,9 +4,10 @@
 
 author:		Daniel Kazmer - http://webshifted.com
 created:	24.11.2012
-version:	2.2.0
+version:	2.3.0
 
 	version history:
+		2.3.0	add 2 extra snap points to the previous maximum for the ability to snap every 10% (24.04.2017)
 		2.2.0	added snap sensitivity - accepts decimal values between 1 & 3 inclusive
 		2.1.2	bug fix: text inputs were not selectable by mouse-drag in Chrome for jQuery - a proper if statement in the document's mousemove event listener solved it, thereby possibly increasing performance (applied to both jQuery and standalone) (01.02.2015)
 		2.1.1	bug fix: clicking anywhere on bar didn't update value; nor did it update color in follow bar, for which a couple of constraint issues were also fixed (24.01.2015)
@@ -370,7 +371,8 @@ function sGlide(self, options){
 		var THE_VALUE		= startAt = settings.startAt,
 			result			= 0,
 			vert			= settings.vertical,
-			markers			= (settings.snap.points > 0 && settings.snap.points <= 9 && settings.snap.marks),
+			is_snap			= (settings.snap.points > 0 && settings.snap.points <= 11) ? true : false,
+			markers			= (is_snap && settings.snap.marks),
 			snapType		= (settings.snap.type != 'hard' && settings.snap.type != 'soft') ? false : settings.snap.type,
 			knob_bg			= '#333',
 			knob_width		= (settings.showKnob && !settings.disabled ? '2%' : '0'),
@@ -542,9 +544,7 @@ function sGlide(self, options){
 			var step = increment;
 
 			//on some browsers knob.width = 0 which makes increment 0 and creates an infinite loop
-			if (increment < 1) {
-				increment = 1
-			} 
+			if (increment < 1) increment = 1;
 
 			while (step <= w+2){	// added 2px to fix glitch when drawing last mark at 7 or 8 snaps (accounts for decimal)
 				snapValues.push(step);
@@ -596,7 +596,7 @@ function sGlide(self, options){
 
 		// vertical
 		var verticalTransform = function(){
-			if (markers && snaps > 0 && snaps < 10){
+			if (markers && is_snap){
 				var a = [self, $('#'+guid+'_markers')];
 
 				wrapAll(a, '<div id="'+guid+'_vert-marks" style="margin:0; z-index:997; width:'+width+unit+
@@ -717,7 +717,7 @@ function sGlide(self, options){
 			btn_is_down = false;
 			clearTimeout(btn_timers);
 		}, knob_adjust = 0, btn_is_down = false, btn_timers = null;
-		var btn_snap = (settings.snap.points > 0 && settings.snap.points <= 9 && (snapType === 'hard' || snapType === 'soft'));
+		var btn_snap = (is_snap && (snapType === 'hard' || snapType === 'soft'));
 
 		// button and arrow key events
 		eventPlusMinusMouseUp	= btnClearAction;
@@ -755,7 +755,7 @@ function sGlide(self, options){
 		// snapping
 		var storedSnapValue = 's-1';
 		var doSnap = function(kind, m){
-			if (snaps > 0 && snaps < 10){	// min 1, max 9
+			if (is_snap){	// min 1, max 9
 				var sense = settings.snap.sensitivity;
 
 				// although snap is enabled, sensitivity may be set to nill, in which case marks are drawn but won't snap to
@@ -928,7 +928,7 @@ function sGlide(self, options){
 					m			= knob.offsetLeft;//x - stopper;	// true position of knob
 
 				// snap to
-				if (snaps > 0 && snaps < 10 && (snapType === 'soft' || snapType === 'hard'))	// min 1, max 9
+				if (is_snap && (snapType === 'soft' || snapType === 'hard'))	// min 1, max 9
 					result = doSnap('drop', m);
 				else
 					result = (m < 0 ? 0 : m);
@@ -1059,7 +1059,7 @@ function sGlide(self, options){
 			var rlt = updateME({'percent':num});
 
 			// inits
-			if (snaps > 0 && snaps < 10)	drawSnapmarks();
+			if (is_snap)					drawSnapmarks();
 			if (vert)						verticalTransform();
 			if (buttons)					drawButtons();
 			if (colorChangeBln)				colorShiftInit();

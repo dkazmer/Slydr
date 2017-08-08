@@ -22,15 +22,15 @@
 </style>
 
 <!-- <script type="text/javascript" src="polyfills.js"></script> -->
-<script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
-<script type="text/javascript" src="jquery.sglide.js"></script>
-<!-- <script type="text/javascript" src="sglide.js"></script> -->
+<!-- <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
+<script type="text/javascript" src="jquery.sglide.js"></script> -->
+<script type="text/javascript" src="sglide.js"></script>
 <!-- <script type="text/javascript" src="../../~web~/sGlide/jquery.sglide.2.min.js"></script> -->
 <!-- <script type="text/javascript" src="../../~web~/sGlide/sglide.2.1.1.min.js"></script> -->
 
 <script type="text/javascript">
 	function run(){
-		/*sglideArr = [];
+		sglideArr = [];
 		// var elsArr = document.getElementsByClassName('slider_bar');
 		var elsArr = [document.getElementById('slider1')];
 		var pct = document.getElementById('percent');
@@ -42,15 +42,15 @@
 				'width': 600,
 				'unit': 'px',
 				// 'image': 'img/knob_.png',
-				// 'pill': false,
+				'pill': false,
 				'snap': {
 					'marks': true,
-					// 'type': 'hard',
-					'points': 7
+					'type': 'hard',
+					'points': 11
 					// 'sensitivity': 1
 				},
 				// 'colorShift': ['#3a4d31', '#7bb560'],
-				'vertical': true,
+				// 'vertical': true,
 				// 'buttons': true,
 				'totalRange': [-58,102],
 				// 'disabled': true,
@@ -66,26 +66,26 @@
 			}));
 		}
 
-		console.log('sglideArr',sglideArr);*/
-		var $pct = $('#percent');
+		console.log('sglideArr',sglideArr);
+		/*var $pct = $('#percent');
 		$('.slider_bar').sGlide({
 			'startAt': 50,
 			'width': 600,
 			'height': 22,
 			'unit': 'px',
 			// 'image': 'img/knob_.png',
-			// 'pill': false,
+			'pill': false,
 			'totalRange': [-58,102],
 			// 'locked': true,
 			'snap': {
 				'marks': true,
-				// 'type': 'hard',
-				'points': 7
+				'type': 'hard',
+				'points': 12
 				// 'sensitivity': 3
 			},
 			// 'colorShift': ['#3a4d31', '#7bb560'],
 			// 'vertical': true,
-			// 'buttons': true,
+			'buttons': true,
 			// 'disabled': true,
 			drag: function(o){
 				// console.log('> drag',o);//,o.id,o);
@@ -94,7 +94,11 @@
 			onSnap: function(o){
 				// console.log('> onButton',o.percent);//,o.id,o);
 			}
-		});
+		});*/
+
+		// setTimeout(function(){
+		// 	$('.slider_bar').sGlide('destroy');
+		// }, 0);
 	};
 </script>
 
