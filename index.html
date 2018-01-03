@@ -70,7 +70,7 @@
 
 		var $pct = $('#percent');
 		$('.slider_bar').sGlide({
-			'startAt': 50,
+			'startAt': 100,
 			'width': 85,
 			'height': 22,
 			// 'unit': 'px',
@@ -80,8 +80,8 @@
 			// 'locked': true,
 			'snap': {
 				'marks': true,
-				'type': 'hard',
-				'points': 11
+				// 'type': 'hard',
+				'points': 6
 				// 'sensitivity': 3
 			},
 			// 'colorShift': ['#3a4d31', '#7bb560'],
@@ -96,6 +96,7 @@
 				// console.log('> onButton',o.percent);//,o.id,o);
 			}
 		});
+		$('.slider_bar').on('sGlide.ready', (e, data) => console.log('>> ready', data));
 
 		// setTimeout(function(){
 		// 	$('.slider_bar').sGlide('destroy');

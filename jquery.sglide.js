@@ -4,10 +4,11 @@
 
 author:		Daniel Kazmer - http://webshifted.com
 created:	24.11.2012
-version:	2.3.0
+version:	3.0.0
 test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 	version history:
+		3.0.0	added jQuery 3 support; added resize support; removed orientation-change support; removed onload callback to favour custom event (ready); restored 'custom' property to output on ready (03.01.2018)
 		2.3.0	add 2 extra snap points to the previous maximum for the ability to snap every 10% (24.04.2017)
 		2.2.0	added snap sensitivity - accepts decimal values between 0 & 3 inclusive
 		2.1.2	bug fix: text inputs were not selectable by mouse-drag in Chrome for jQuery - a proper if statement in the document's mousemove event listener solved it, thereby possibly increasing performance (applied to both jQuery and standalone) (01.02.2015)
@@ -114,7 +115,6 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				}
 				
 				$(document).off(mEvt.move+'.'+guid).off(mEvt.up+'.'+guid);
-				// $(window).off('orientationchange.'+guid);	// may not need this
 				$(window).off('resize.'+guid);
 				self.off(mEvt.down);
 				self.children().remove();
@@ -673,12 +673,6 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					}
 				};
 
-				/*var eventWindowResize = function(){
-					console.log('>> eventWindowResize');
-					self.sGlide('startAt', valueObj[guid]);
-					if (markers) drawSnapmarks(true);
-				};*/
-
 				if (!isMobile && (keyCtrl || keyCtrlShift)){
 					var keycode, keydown = false,
 						codeBack	= (vert) ? 40 : 37,
@@ -724,10 +718,6 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 						touchY = e.originalEvent.touches[0].pageY;
 					});
 				}
-				/*if (isMobile || uAgent.match(/Windows Phone/i)){
-					// orientation
-					$(window).on('orientationchange.'+guid, eventWindowResize);
-				}*/
 
 				$(document).on(mEvt.move+'.'+guid, function(e){
 					if (is_down){
@@ -772,9 +762,6 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 							if (!snapType || snapType === 'hard') doSnap('drag', m);
 						}
 
-						// result = knob.position().left;	// was knob[0].style.left
-						// result = self_width - knob.position().top - knobWidth;
-						// result = (vert ? self_width - knob.position().top - knobWidth : knob.position().left);
 						result = knob[0].offsetLeft;
 
 						var state = self.data('state');
@@ -792,18 +779,8 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					is_down = false;
 					if (state === 'active'){
 						e = e || event;	// ie fix
-						/*var x = null, base = 0;
-
-						if (vert){
-							base = self.position().top + self_width;
-							x = base - ((!isMobile ? e.pageY : touchY)-2);
-						} else x = (!isMobile ? e.pageX : touchX) - self.offset().left;*/
 						
-						var // knobWidth	= knob.width(),
-							// stopper		= knobWidth / 2,
-							// m			= knob.position().left;//x - stopper;	// true position of knob
-							// m			= (vert ? self_width - knob.position().top - knobWidth : knob.position().left);
-							m			= knob[0].offsetLeft;
+						var m			= knob[0].offsetLeft;
 
 						// snap to
 						if (is_snap && (snapType === 'soft' || snapType === 'hard'))	// min 1, max 9
@@ -824,7 +801,6 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				});
 
 				$(window).on('resize.'+guid, function(){
-					console.log('>> resize');
 					var kw	= knob.width();
 					var pos	= THE_VALUE / 100 * (self.width() - kw) + (kw/2);
 
@@ -938,20 +914,21 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 				var setStartAt = function(e){
 					var num = valueObj[guid];
-
 					var rlt = updateME({'percent':num});
+
+					if (customRange) rlt.custom = diff * num / 100 + cstmStart;
 
 					// inits
 					if (is_snap)					drawSnapmarks();
 					if (vert)						verticalTransform();
 					if (helpers[guid+'-buttons'])	drawButtons();
 					if (colorChangeBln)				colorShiftInit();
-					if (options.onload)				options.onload(rlt);
+					// if (options.onload)				options.onload(rlt);
 
 					self.sGlide('startAt', num);
 
 					$(el).off('makeready.'+guid, setStartAt);
-					$(el).trigger('sGlide.ready')
+					$(el).trigger('sGlide.ready', [rlt]);
 				};
 
 				// Listen for image loaded
