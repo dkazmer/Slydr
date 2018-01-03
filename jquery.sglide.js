@@ -951,6 +951,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					self.sGlide('startAt', num);
 
 					$(el).off('makeready.'+guid, setStartAt);
+					$(el).trigger('sGlide.ready')
 				};
 
 				// Listen for image loaded
