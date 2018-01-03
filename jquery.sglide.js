@@ -114,10 +114,10 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				}
 				
 				$(document).off(mEvt.move+'.'+guid).off(mEvt.up+'.'+guid);
-				$(window).off('orientationchange.'+guid);
+				// $(window).off('orientationchange.'+guid);	// may not need this
+				$(window).off('resize.'+guid);
 				self.off(mEvt.down);
-				self.children('.slider_knob').off(mEvt.up).off(mEvt.down).remove();
-				self.children('.follow_bar').off(mEvt.down).remove();
+				self.children().remove();
 				self.removeAttr('style').removeClass('vertical');
 			});
 			return this;
@@ -279,7 +279,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 					knob.html('<img src="'+img+'" style="visibility:hidden; position:absolute" />');
 					// self_height = 'auto';
-					knob.children('img').load(function(){
+					knob.children('img').on('load', function(){
 						// this is img element
 
 						if (retina){
@@ -420,8 +420,9 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				// snap marks, buttons, vertical
 
 				// snap to
-				var snapping_on = false;
+				var marks = null;
 				var snaps = Math.round(settings.snap.points);
+				var snapping_on = false;
 				// var is_snap = (snaps > 0 && snaps < 12) ? true : false;
 				var snapPctValues = [0];
 				var drawSnapmarks = function(resize){
@@ -453,7 +454,6 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 					// markers
 					if (markers){
-						var marks = null;
 						if (!resize){
 							self.after('<div id="'+guid+'_markers"></div>');
 							
@@ -610,13 +610,6 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				// knob
 				var is_down = false;
 
-				knob.on(mEvt.down, function(){
-					is_down = true;
-					self.data('state', 'active');
-				}).on(mEvt.up, function(){
-					is_down = false;
-				});
-
 				// snapping
 				var storedSnapValue = 's-1';
 				var doSnap = function(kind, m){
@@ -680,10 +673,11 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					}
 				};
 
-				var eventWindowResize = function(){
+				/*var eventWindowResize = function(){
+					console.log('>> eventWindowResize');
 					self.sGlide('startAt', valueObj[guid]);
 					if (markers) drawSnapmarks(true);
-				};
+				};*/
 
 				if (!isMobile && (keyCtrl || keyCtrlShift)){
 					var keycode, keydown = false,
@@ -730,10 +724,10 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 						touchY = e.originalEvent.touches[0].pageY;
 					});
 				}
-				if (isMobile || uAgent.match(/Windows Phone/i)){
+				/*if (isMobile || uAgent.match(/Windows Phone/i)){
 					// orientation
 					$(window).on('orientationchange.'+guid, eventWindowResize);
-				}
+				}*/
 
 				$(document).on(mEvt.move+'.'+guid, function(e){
 					if (is_down){
@@ -829,6 +823,25 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					if (btn_is_down) btnClearAction();
 				});
 
+				$(window).on('resize.'+guid, function(){
+					console.log('>> resize');
+					var kw	= knob.width();
+					var pos	= THE_VALUE / 100 * (self.width() - kw) + (kw/2);
+
+					knob.css('left', pos-(kw/2));
+					follow.css('width', pos);
+					self_width = self.width();
+
+					if (marks){
+						var points = settings.snap.points;
+						marks.css('width', self_width)
+						.children('div').each(function(i, el){
+							var val = ((self_width - kw) / (points-1)-1) * i;
+							$(el).css('left', val);
+						});
+					}
+				});
+
 				//------------------------------------------------------------------------------------------------------------------------------------
 				// functions
 
@@ -918,10 +931,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					}
 				};
 
-				if (!settings.disabled){
-					self.on(mEvt.down, eventBarMouseDown);
-					follow.on(mEvt.down, eventBarMouseDown);
-				}
+				if (!settings.disabled) self.on(mEvt.down, eventBarMouseDown);
 
 				//------------------------------------------------------------------------------------------------------------------------------------
 				// start
