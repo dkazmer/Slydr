@@ -17,6 +17,7 @@
 /*#slider1 {transform-origin: 460px 260px !important;}*/
 /*#slider2 {margin: -130px -290px !important;}*/
 /*#slider1 {margin-left: 60px !important;}*/
+.slider_knob {background-color: #ccc !important;}
 .follow_bar {background-color: #363;}
 #slider1_vert-marks {margin-left: 60px !important;}
 </style>
@@ -70,18 +71,18 @@
 
 		var $pct = $('#percent');
 		$('.slider_bar').sGlide({
-			'startAt': 100,
-			'width': 85,
+			'startAt': 33,
+			'width': 65,
 			'height': 22,
 			// 'unit': 'px',
-			'image': 'img/knob_.png',
+			// 'image': 'img/knob_.png',
 			'pill': false,
 			'totalRange': [-58,102],
 			// 'locked': true,
 			'snap': {
 				'marks': true,
-				// 'type': 'hard',
-				'points': 6
+				// 'type': 'soft',
+				'points': 11
 				// 'sensitivity': 3
 			},
 			// 'colorShift': ['#3a4d31', '#7bb560'],
@@ -95,8 +96,9 @@
 			onSnap: function(o){
 				// console.log('> onButton',o.percent);//,o.id,o);
 			}
-		});
-		$('.slider_bar').on('sGlide.ready', (e, data) => console.log('>> ready', data));
+		})//;
+		//$('.slider_bar')
+		.on('sGlide.ready', (e, data) => console.log('>> ready', data));
 
 		// setTimeout(function(){
 		// 	$('.slider_bar').sGlide('destroy');

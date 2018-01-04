@@ -8,7 +8,7 @@ version:	3.0.0
 test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 	version history:
-		3.0.0	added jQuery 3 support; added resize support; removed orientation-change support; removed onload callback to favour custom event (ready); restored 'custom' property to output on ready (03.01.2018)
+		3.0.0	chainable; added jQuery 3 support; added resize support; removed orientation-change support; removed onload callback to favour custom event (ready); restored 'custom' property to output on ready; rebuilt snapmark & more accurate snapping (03.01.2018)
 		2.3.0	add 2 extra snap points to the previous maximum for the ability to snap every 10% (24.04.2017)
 		2.2.0	added snap sensitivity - accepts decimal values between 0 & 3 inclusive
 		2.1.2	bug fix: text inputs were not selectable by mouse-drag in Chrome for jQuery - a proper if statement in the document's mousemove event listener solved it, thereby possibly increasing performance (applied to both jQuery and standalone) (01.02.2015)
@@ -423,13 +423,14 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				var marks = null;
 				var snaps = Math.round(settings.snap.points);
 				var snapping_on = false;
-				// var is_snap = (snaps > 0 && snaps < 12) ? true : false;
 				var snapPctValues = [0];
-				var drawSnapmarks = function(resize){
-					if (snaps === 1) snaps = 2;
-				
-					// pixels
+				// var is_snap = (snaps > 0 && snaps < 12) ? true : false;
+
+				var setSnapValues = function(){
 					var kw = knob.width();
+					if (snaps === 1) snaps = 2;
+
+					// pixels
 					var w = self_width - kw;
 					var increment = w / (snaps - 1);
 					var snapValues = [0];
@@ -442,6 +443,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 						snapValues.push(step);
 						step += increment;
 					}
+
 					// percentage
 					increment = 100 / (snaps - 1);
 					step = increment;
@@ -453,7 +455,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					snapping_on = true;
 
 					// markers
-					if (markers){
+					/*if (markers){
 						if (!resize){
 							self.after('<div id="'+guid+'_markers"></div>');
 							
@@ -476,6 +478,39 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 						for (var i = 0; i < snapValues.length; i++)
 							str += '<div style="display:inline-block; width:0; height:5px; border-left:#333 solid 1px; position:relative; left:'+
 								(snapValues[i]-i)+'px; float:left"></div>';
+
+						marks.html(str);
+					}*/
+					if (markers) drawSnapmarks(kw);
+				};
+
+				var drawSnapmarks = function(kw){
+					self.after('<div id="'+guid+'_markers"></div>');
+					marks = $('#'+guid+'_markers');
+					marks.css({
+						'position': 'relative',
+						'width': self_width, //settings.width + unit,
+						'margin': 'auto',
+						'-webkit-touch-callout': 'none',
+						'box-sizing': 'border-box'
+					}).css(cssUserSelect);
+
+					if (marks){
+						var str = '';
+						var val = null;
+
+						marks.css('width', self_width);
+
+						// by px
+						for (var i = snaps - 1; i >= 0; i--){
+							val = (self_width - kw) / (snaps-1) * i + (kw/2);
+							str += '<div style="width:0; height:5px; border-left:#333 solid 1px; position:absolute; left:'+val+'px"></div>';
+						}
+						// by %
+						/*for (var j = snapPctValues.length - 1; j >= 0; j--){
+							val = (self_width - kw) * (snapPctValues[j] / 100) + (kw/2);
+							str += '<div style="width:0; height:5px; border-left:#333 solid 1px; position:absolute; top:6px; left:'+val+'px"></div>';
+						}*/
 
 						marks.html(str);
 					}
@@ -618,21 +653,20 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 						// although snap is enabled, sensitivity may be set to nill, in which case marks are drawn but won't snap to
 						if (sense || snapType === 'hard' || snapType === 'soft'){
-							var knobWidth	= knob.width(),
+							var kw			= knob.width(),
 								snapOffset	= (sense && sense > 0 && sense < 4 ? (sense + 1) * 5 : 15) - 3;
 
-							// % to px
+							// % to px (needs to update on action)
 							var snapPixelValues = [];
 							for (var i = 0; i < snapPctValues.length; i++){
-								snapPixelValues.push((self_width - knobWidth) * snapPctValues[i] / 100);
-								// snapPixelValues.push(snapValues[i] - knobWidth*i);
+								snapPixelValues.push((self_width - kw) * snapPctValues[i] / 100);
 							}
 
 							// get closest px mark, and set %
 							var closest = null, pctVal = 0;
 							$.each(snapPixelValues, function(i){
 								if (closest === null || Math.abs(this - m) < Math.abs(closest - m)){
-									closest = this | 0;
+									closest = Math.round(this) | 0;
 									pctVal = snapPctValues[i];
 								}
 							});
@@ -640,19 +674,19 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 							// physically snap it
 							if (kind === 'drag'){
 								if (snapType === 'hard'){
-									updateSnap(closest, (closest+knobWidth/2));
+									updateSnap(closest, (closest+kw/2));
 									doOnSnap(closest, pctVal);
 								} else {
 									if (Math.round(Math.abs(closest - m)) < snapOffset){
-										updateSnap(closest, (closest+knobWidth/2));
+										updateSnap(closest, (closest+kw/2));
 										doOnSnap(closest, pctVal);
 									} else storedSnapValue = 's-1';
 								}
 							} else if (kind === 'hard'){
-								updateSnap(closest, (closest+knobWidth/2));
+								updateSnap(closest, (closest+kw/2));
 								return closest;
 							} else {
-								updateSnap(closest, (closest+knobWidth/2), true);
+								updateSnap(closest, (closest+kw/2), true);
 								return closest;
 							}
 						}
@@ -809,11 +843,10 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					self_width = self.width();
 
 					if (marks){
-						var points = settings.snap.points;
 						marks.css('width', self_width)
-						.children('div').each(function(i, el){
-							var val = ((self_width - kw) / (points-1)-1) * i;
-							$(el).css('left', val);
+						.children('div').each(function(i, mark){
+							val = (self_width - kw) / (snaps-1) * i + (kw/2);
+							$(mark).css('left', val);
 						});
 					}
 				});
@@ -919,7 +952,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					if (customRange) rlt.custom = diff * num / 100 + cstmStart;
 
 					// inits
-					if (is_snap)					drawSnapmarks();
+					if (is_snap)					setSnapValues();
 					if (vert)						verticalTransform();
 					if (helpers[guid+'-buttons'])	drawButtons();
 					if (colorChangeBln)				colorShiftInit();
@@ -935,6 +968,8 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				var eventMakeReady = $.Event('makeready.'+guid);
 				$(el).on('makeready.'+guid, setStartAt);
 			});
+
+			return this;
 		}
 	};
 	$.fn.sGlide = function(params){

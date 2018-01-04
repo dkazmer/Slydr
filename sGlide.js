@@ -774,7 +774,7 @@ function sGlide(self, options){
 					var closest = null, pctVal = 0;
 					for (var i = 0; i < snapPixelValues.length; i++) {
 						if (closest === null || Math.abs(snapPixelValues[i] - m) < Math.abs(closest - m)){
-							closest = snapPixelValues[i];
+							closest = Math.round(snapPixelValues[i]);
 							pctVal = snapPctValues[i];
 						}
 					}
