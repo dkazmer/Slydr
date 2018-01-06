@@ -4,9 +4,10 @@
 
 author:		Daniel Kazmer - http://webshifted.com
 created:	24.11.2012
-version:	2.3.0
+version:	3.0.0
 
 	version history:
+		3.0.0	added 'load' method in favour of 'onload' prop; removed CustomEvent polyfill; all callbacks now receive sGlide context; all methods chainable except 'destroy'; removed custom element getter to favour querySelectorAll; added resize support; removed orientation-change support; restored 'custom' property to output on ready; rebuilt snapmarks & more accurate snapping; other minor snap improvements & bug fixes (05.01.2018)
 		2.3.0	add 2 extra snap points to the previous maximum for the ability to snap every 10% (24.04.2017)
 		2.2.0	added snap sensitivity - accepts decimal values between 1 & 3 inclusive
 		2.1.2	bug fix: text inputs were not selectable by mouse-drag in Chrome for jQuery - a proper if statement in the document's mousemove event listener solved it, thereby possibly increasing performance (applied to both jQuery and standalone) (01.02.2015)
@@ -50,7 +51,7 @@ version:	2.3.0
 			vertical:				// boolean - default: false
 			showKnob:				// boolean - default: true
 			buttons:				// boolean - default: false
-			drop/drag/onSnap/onButton/onload: function(o){
+			drop/drag/onSnap/onButton: function(o){
 				console.log('returned object',o);
 			}
 		});
@@ -72,6 +73,7 @@ function sGlide(self, options){
 	//------------------------------------------------------------------------------------------------------------------------------------
 	// global variables
 
+	var that			= this;
 	var knob			= null,
 		follow			= null,
 		startAt			= 0,
@@ -104,8 +106,8 @@ function sGlide(self, options){
 
 	this.element = self;
 
-	// CustomEvent polyfill for IE
-	if (!(CustomEvent instanceof Function)){
+	// CustomEvent polyfill for IE -------> add this to GIT readme
+	/*if (!(CustomEvent instanceof Function)){
 	// if (typeof CustomEvent === 'undefined'){
 		(function(){
 			function CustomEvent(event, params){
@@ -119,7 +121,7 @@ function sGlide(self, options){
 			CustomEvent.prototype = window.Event.prototype;
 			window.CustomEvent = CustomEvent;
 		})();
-	}
+	}*/
 
 	//------------------------------------------------------------------------------------------------------------------------------------
 	// public methods
@@ -128,14 +130,14 @@ function sGlide(self, options){
 		var guid = self.getAttribute('id');
 
 		// unwrap vertical buttons
-		var vertContainer = get('#'+guid+'_vert-marks');
+		var vertContainer = $('#'+guid+'_vert-marks')[0];
 		if (vertContainer){
 			var vertParent = vertContainer.parentNode;
 			vertParent.insertBefore(self, vertContainer.nextSibling);
 			vertParent.removeChild(vertContainer);
 		}
 
-		var markers = get('#'+guid+'_markers');
+		var markers = $('#'+guid+'_markers')[0];
 		if (markers) markers.parentNode.removeChild(markers);
 
 		if (isMobile){
@@ -147,7 +149,7 @@ function sGlide(self, options){
 
 		// remove buttons
 		if (buttons){
-			var plus = get('#'+guid+'_plus'), minus = get('#'+guid+'_minus');
+			var plus = $('#'+guid+'_plus')[0], minus = $('#'+guid+'_minus')[0];
 			var buttonsParent = plus.parentNode;
 			plus.removeEventListener(mEvt.up, eventPlusMinusMouseUp);
 			plus.removeEventListener(mEvt.down, eventPlusMouseDown);
@@ -157,7 +159,7 @@ function sGlide(self, options){
 			buttonsParent.removeChild(minus);
 			// unwrap
 			if (!vertContainer){
-				var buttonsContainer = get('#'+guid+'_button-marks');
+				var buttonsContainer = $('#'+guid+'_button-marks')[0];
 				if (buttonsContainer){
 					var buttonsContainerParent = buttonsContainer.parentNode;
 					buttonsContainerParent.insertBefore(buttonsContainer.childNodes[0], buttonsContainer.nextSibling);
@@ -169,12 +171,8 @@ function sGlide(self, options){
 		document.removeEventListener(mEvt.move, eventDocumentMouseMove);
 		document.removeEventListener(mEvt.up, eventDocumentMouseUp);
 		window.removeEventListener('resize', eventWindowResize);
-		window.removeEventListener('orientationchange', eventWindowResize);
 		self.removeEventListener(mEvt.down, eventBarMouseDown);
-		knob.removeEventListener(mEvt.up, eventKnobMouseUp);
-		knob.removeEventListener(mEvt.down, eventKnobMouseDown);
 		self.removeChild(knob);
-		follow.removeEventListener(mEvt.down, eventBarMouseDown);
 		self.removeChild(follow);
 		self.removeAttribute('style');
 		self.removeAttribute('data-state');
@@ -209,16 +207,25 @@ function sGlide(self, options){
 		return this;
 	};
 
+	var callback = null;
+	var notifier = fn => {callback = fn; return this;};
+	self.addEventListener('sGlide.ready', data => callback.call(that, data.detail));
+	this.load = notifier;
+
 	//------------------------------------------------------------------------------------------------------------------------------------
 	// private global functions
 
-	function get(id){
+	/*function get(id){
 		switch (id[0]){
 			case '#':	return document.getElementById(id.substr(1));
 			case '.':	return document.getElementsByClassName(id.substr(1));
 			default:	return document.getElementsByTagName(id);
 		}
-	}
+	}*/
+
+	var $ = function(name){
+		return document.querySelectorAll(name);
+	};
 
 	function wrapAll(elements, wrapperStr){
 		// set wrapper element
@@ -294,7 +301,7 @@ function sGlide(self, options){
 		el.setAttribute('style', str.trim());
 	}
 
-	(function(document, that, $){
+	(function(document, that){
 
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// validate params
@@ -459,7 +466,7 @@ function sGlide(self, options){
 					css(self, {'overflow': 'hidden'});
 				}
 
-				window.dispatchEvent(eventMakeReady);
+				self.dispatchEvent(eventMakeReady);
 			};
 		} else {
 			var d = settings.height / 2;
@@ -467,7 +474,7 @@ function sGlide(self, options){
 			css(follow, {'border-radius': (r_corners ? d+'px 0 0 '+d+'px' : '0')});
 			setTimeout(function(){
 				knob.style.backgroundColor = knob_bg;	// IE patch
-				window.dispatchEvent(eventMakeReady);
+				self.dispatchEvent(eventMakeReady);
 			}, 0);
 		}
 
@@ -524,21 +531,23 @@ function sGlide(self, options){
 		});
 		css(follow, clone(cssContentBox), cssPrefixes);
 
-		if (vert) var vertWidth = self.offsetWidth;
+		if (vert) var vertWidth = Math.round(self.offsetWidth);
 
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// snap marks, buttons, vertical
 
 		// snap to
-		var snapping_on = false;
+		var marks = null;
 		var snaps = Math.round(settings.snap.points);
+		var snapping_on = false;
 		var snapPctValues = [0];
-		var drawSnapmarks = function(resize){
+
+		var setSnapValues = function(resize){
 			if (snaps === 1) snaps = 2;
 			
 			// pixels
 			var kw = knob.offsetWidth;
-			var w = self.offsetWidth - kw;
+			/*var w = self.offsetWidth - kw;
 			var increment = w / (snaps - 1);
 			var snapValues = [0];
 			var step = increment;
@@ -549,10 +558,10 @@ function sGlide(self, options){
 			while (step <= w+2){	// added 2px to fix glitch when drawing last mark at 7 or 8 snaps (accounts for decimal)
 				snapValues.push(step);
 				step += increment;
-			}
+			}*/
 			// percentage
-			increment = 100 / (snaps - 1);
-			step = increment;
+			var increment = 100 / (snaps - 1);
+			var step = increment;
 			while (step <= 101){	// added 1% to fix glitch when drawing last mark at 7 or 8 snaps (accounts for decimal)
 				snapPctValues.push(step);
 				step += increment;
@@ -560,33 +569,40 @@ function sGlide(self, options){
 
 			snapping_on = true;
 
-			// markers
-			if (markers){
-				var marks = null;
-				if (!resize){
-					// self.parentNode.insertBefore('<div id="'+guid+'_markers"></div>', self.nextSibling);
-					self.insertAdjacentHTML('afterend', '<div id="'+guid+'_markers"></div>');
-					
-					marks = $('#'+guid+'_markers');
-					
-					css(marks, {
-						'width': self.offsetWidth+'px', //settings.width + unit,
-						'margin': 'auto',
-						'padding-left': (kw/2)+'px',
-						'-webkit-touch-callout': 'none'
-					});
-					css(marks, {'box-sizing': 'border-box'}, cssPrefixes);
-					css(marks, {'user-select': 'none'}, cssPrefixes);
-				} else {
-					marks = $('#'+guid+'_markers');
-					marks.innerHTML = '';
-				}
+			if (markers) drawSnapmarks(kw);
+		};
 
+		var drawSnapmarks = function(kw){
+			var selfWidth = self.offsetWidth;
+			// self.after('<div id="'+guid+'_markers"></div>');
+			self.insertAdjacentHTML('afterend', '<div id="'+guid+'_markers"></div>');
+			marks = $('#'+guid+'_markers')[0];
+			// marks = document.querySelector('#'+guid+'_markers');
+			css(marks, {
+				'position': 'relative',
+				'width': self.offsetWidth+'px', //settings.width + unit,
+				'margin': 'auto',
+				'-webkit-touch-callout': 'none'
+			});
+			css(marks, {'box-sizing': 'border-box'}, cssPrefixes);
+			css(marks, {'user-select': 'none'}, cssPrefixes);
+
+			if (marks){
 				var str = '';
+				var val = null;
 
-				for (var i = 0; i < snapValues.length; i++)
-					str += '<div style="display:inline-block; width:0; height:5px; border-left:#333 solid 1px; position:relative; left:'+
-						(snapValues[i]-i)+'px; float:left"></div>';
+				css(marks, {'width': selfWidth+'px'});
+
+				// by px
+				for (var i = snaps - 1; i >= 0; i--){
+					val = (selfWidth - kw) / (snaps-1) * i + (kw/2);
+					str += '<div style="width:0; height:5px; border-left:#333 solid 1px; position:absolute; left:'+val+'px"></div>';
+				}
+				// by %
+				/*for (var j = snapPctValues.length - 1; j >= 0; j--){
+					val = (selfWidth - kw) * (snapPctValues[j] / 100) + (kw/2);
+					str += '<div style="width:0; height:5px; border-left:#333 solid 1px; position:absolute; top:6px; left:'+val+'px"></div>';
+				}*/
 
 				marks.innerHTML = str;
 			}
@@ -597,12 +613,12 @@ function sGlide(self, options){
 		// vertical
 		var verticalTransform = function(){
 			if (markers && is_snap){
-				var a = [self, $('#'+guid+'_markers')];
+				var a = [self, $('#'+guid+'_markers')[0]];
 
 				wrapAll(a, '<div id="'+guid+'_vert-marks" style="margin:0; z-index:997; width:'+width+unit+
 					'; -webkit-backface-visibility:hidden; -moz-backface-visibility:hidden; -ms-backface-visibility:hidden; backface-visibility:hidden"></div>');
 
-				vmarks = $('#'+guid+'_vert-marks');
+				vmarks = $('#'+guid+'_vert-marks')[0];
 
 				css(self, {'width': '100%'});
 				css(vmarks, clone(cssContentBox), cssPrefixes);
@@ -625,6 +641,8 @@ function sGlide(self, options){
 
 		// -----------
 
+		var idx = null;	// snapPctValues index
+
 		// buttons
 		var drawButtons = function(){
 			knob_adjust = knob.offsetWidth / self.offsetWidth * 50;
@@ -637,15 +655,15 @@ function sGlide(self, options){
 				var q = null;
 				if (!vert){
 					css(self, {'width': 'auto'});
-					var a = (vert) ? [$('#'+guid+'_vert-marks')] : [$('#'+guid), $('#'+guid+'_markers')];
+					var a = (vert) ? [$('#'+guid+'_vert-marks')[0]] : [$('#'+guid)[0], $('#'+guid+'_markers')[0]];
 					wrapAll(a, '<div id="'+guid+'_button-marks" style="display:inline-block; vertical-align:middle; width:'+width+unit+'"></div>');
 					q = $('#'+guid+'_button-marks');
 				} else {
 					q = $('#'+guid+'_vert-marks');
 				}
 
-				q.insertAdjacentHTML('afterend', plusStr);
-				q.insertAdjacentHTML('beforebegin', minusStr);
+				q[0].insertAdjacentHTML('afterend', plusStr);
+				q[0].insertAdjacentHTML('beforebegin', minusStr);
 			} else {
 				css(self, {
 					'display': (!vert) ? 'inline-block' : 'block',
@@ -656,8 +674,8 @@ function sGlide(self, options){
 				self.insertAdjacentHTML('beforebegin', minusStr);
 			}
 
-			var plusBtn		= $('#'+guid+'_plus'),
-				minusBtn	= $('#'+guid+'_minus');
+			var plusBtn		= $('#'+guid+'_plus')[0],
+				minusBtn	= $('#'+guid+'_minus')[0];
 
 			css(minusBtn, clone(cssUserSelect), cssPrefixes);
 			css(plusBtn, clone(cssUserSelect), cssPrefixes);
@@ -670,25 +688,27 @@ function sGlide(self, options){
 				minusBtn.addEventListener(mEvt.up, btnClearAction);
 			}
 		}, btnTriggers = function(direction, smoothBln){
-			// if startAt changed on instance
-			if (startAt !== null && THE_VALUE !== startAt) THE_VALUE = startAt;
-
-			startAt = null;
-
-			var set_value = THE_VALUE;
+			// var set_value = THE_VALUE = valueObj[guid];
 			if (btn_snap){
-				var intvl = 100 / (settings.snap.points - 1);
-				var p = intvl;
-				for (var i = 0; i < settings.snap.points; i++){
-					if (intvl >= THE_VALUE){
-						if (direction === '>')	THE_VALUE = (Math.round(intvl) > Math.round(THE_VALUE) ? intvl : intvl+p);
-						else					THE_VALUE = intvl-p;
-						break;
-					} else intvl += p;
+				if (idx === null){
+					for (var i = 0; i < snapPctValues.length; i++){
+						if (snapPctValues[i] >= THE_VALUE){
+							if (direction === '>') idx = i-1;
+							else idx = i;
+							break;
+						}
+					}
 				}
+
+				if (direction === '>'){
+					if (snaps-1 > idx) idx++;
+				} else {
+					if (idx > 0) idx--;
+				}
+				THE_VALUE = snapPctValues[idx];
 			} else {
-				if (direction === '>')	THE_VALUE+=(smoothBln ? 1 : 10);
-				else					THE_VALUE-=(smoothBln ? 1 : 10);
+				if (direction === '>')	THE_VALUE += (smoothBln ? 1 : 10);
+				else					THE_VALUE -= (smoothBln ? 1 : 10);
 			}
 
 			set_value = THE_VALUE;	// leave THE_VALUE out of visual adjustments
@@ -707,7 +727,7 @@ function sGlide(self, options){
 			if (colorChangeBln) colorChange({'percent':set_value});
 
 			// output
-			if (options.onButton) options.onButton(updateME(getPercent(pxAdjust)));
+			if (options.onButton) options.onButton.call(that, updateME(getPercent(pxAdjust)));
 		}, btnHold = function(dir){
 			var btnHold_timer = setInterval(function(){
 				if (btn_is_down) btnTriggers(dir, true);
@@ -741,7 +761,7 @@ function sGlide(self, options){
 		// knob
 		var is_down = false;
 
-		eventKnobMouseDown = function(){
+		/*eventKnobMouseDown = function(){
 			is_down = true;
 			self.setAttribute('data-state', 'active');
 		};
@@ -750,7 +770,7 @@ function sGlide(self, options){
 		};
 
 		knob.addEventListener(mEvt.down, eventKnobMouseDown);
-		knob.addEventListener(mEvt.up, eventKnobMouseUp);
+		knob.addEventListener(mEvt.up, eventKnobMouseUp);*/
 
 		// snapping
 		var storedSnapValue = 's-1';
@@ -776,6 +796,7 @@ function sGlide(self, options){
 						if (closest === null || Math.abs(snapPixelValues[i] - m) < Math.abs(closest - m)){
 							closest = Math.round(snapPixelValues[i]);
 							pctVal = snapPctValues[i];
+							idx = i;
 						}
 					}
 
@@ -802,7 +823,7 @@ function sGlide(self, options){
 		}, doOnSnap = function(a, b){ // callback: onSnap
 			if (options.onSnap && 's'+a !== storedSnapValue){
 				storedSnapValue = 's'+a;
-				options.onSnap(updateME(getPercent(a)));
+				options.onSnap.call(that, updateME(getPercent(a)));
 			}
 		};
 
@@ -848,10 +869,6 @@ function sGlide(self, options){
 			};
 			document.addEventListener(mEvt.down, eventDocumentMouseDown);
 		}
-		if (isMobile || uAgent.match(/Windows Phone/i)){
-			// orientation
-			window.addEventListener('orientationchange', eventWindowResize);
-		}
 
 		eventDocumentMouseMove = function(e){
 			if (is_down){
@@ -888,8 +905,10 @@ function sGlide(self, options){
 					knob.style.left = '0';
 					follow.style.width = stopper+'px';
 				} else if (x >= selfWidth-stopper){
-					knob.style.left = (selfWidth-knobWidth)+'px';
-					follow.style.width = (selfWidth-stopper)+'px';
+					if (!is_snap){
+						knob.style.left = (selfWidth-knobWidth)+'px';
+						follow.style.width = (selfWidth-stopper)+'px';
+					}
 				} else {
 					knob.style.left = (x-stopper)+'px';
 					follow.style.width = x+'px';
@@ -904,7 +923,7 @@ function sGlide(self, options){
 
 				// update values
 				if (options.drag && state === 'active')
-					options.drag(updateME(getPercent(result)));
+					options.drag.call(that, updateME(getPercent(result)));
 
 				// color change
 				if (colorChangeBln && state === 'active')
@@ -933,8 +952,8 @@ function sGlide(self, options){
 				else
 					result = (m < 0 ? 0 : m);
 
-				if (options.drop) options.drop(updateME(getPercent(result)));
-				if (options.drag) options.drag(updateME(getPercent(result)));
+				if (options.drop) options.drop.call(that, updateME(getPercent(result)));
+				if (options.drag) options.drag.call(that, updateME(getPercent(result)));
 				self.setAttribute('data-state', 'inactive');
 
 				// color change
@@ -946,8 +965,24 @@ function sGlide(self, options){
 		};
 
 		eventWindowResize = function(){
+			var val = null;
+			var kw	= knob.offsetWidth;
+			var selfWidth = self.offsetWidth;
+			// console.log('>> resize');
 			that.startAt(startAt);
-			if (markers) drawSnapmarks(true);
+
+			if (marks){
+				// css(marks, {'width': selfWidth+'px'});
+				marks.style.width = selfWidth+'px';
+				// console.log('>> childs', marks.children);
+				// const nodelist = document.querySelectorAll(‘.divy’)
+				var divArray = Array.prototype.slice.call(marks.children);
+				for (var i = divArray.length - 1; i >= 0; i--){
+					val = (selfWidth - kw) / (snaps-1) * i + (kw/2);
+					// css(divArray[i], {'left': val+'px'});
+					divArray[i].style.left = val+'px';
+				}
+			}
 		};
 
 		document.addEventListener(mEvt.move, eventDocumentMouseMove);
@@ -1011,7 +1046,7 @@ function sGlide(self, options){
 			is_down = true;
 			self.setAttribute('data-state', 'active');
 
-			if (!isMobile && snapType !== 'hard'){
+			if (!isMobile){// && snapType !== 'hard'){
 				var selfWidth = self.offsetWidth;
 				var knobWidth = knob.offsetWidth;
 				var x = null;
@@ -1040,38 +1075,43 @@ function sGlide(self, options){
 				knob.style.left = m+'px';
 				follow.style.width = m+(knobWidth/2)+'px';
 
+				if (!snapType || snapType === 'hard') doSnap('drag', m);
+
 				// color change
 				if (colorChangeBln) colorChange(getPercent(m));
 			}
 		};
 
-		if (!settings.disabled){
+		if (!settings.disabled)
 			self.addEventListener(mEvt.down, eventBarMouseDown);
-			follow.addEventListener(mEvt.down, eventBarMouseDown);
-		}
 
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// start
 
 		var setStartAt = function(e){
 			var num = startAt;
-
 			var rlt = updateME({'percent':num});
 
+			if (customRange) rlt.custom = diff * num / 100 + cstmStart;
+
 			// inits
-			if (is_snap)					drawSnapmarks();
+			if (is_snap)					setSnapValues();
 			if (vert)						verticalTransform();
 			if (buttons)					drawButtons();
 			if (colorChangeBln)				colorShiftInit();
-			if (options.onload)				options.onload(rlt);
+			// if (options.onload)				options.onload(rlt);
 
 			that.startAt(num);
 
-			window.removeEventListener('makeready.'+guid, setStartAt);
+			self.removeEventListener('makeready.'+guid, setStartAt);
+
+			var ready = new CustomEvent('sGlide.ready', {'detail': rlt});
+			self.dispatchEvent(ready);
+			self.removeEventListener('sGlide.ready', null);
 		};
 
 		// Listen for image loaded
-		var eventMakeReady = new CustomEvent('makeready.'+guid);
-		window.addEventListener('makeready.'+guid, setStartAt);
-	})(document, this, get);
+		var eventMakeReady = new Event('makeready.'+guid);
+		self.addEventListener('makeready.'+guid, setStartAt);
+	})(document, this);
 }

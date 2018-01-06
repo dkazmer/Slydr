@@ -24,55 +24,61 @@
 
 <!-- <script type="text/javascript" src="polyfills.js"></script> -->
 <!-- <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script> -->
-<script src="http://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-<script type="text/javascript" src="jquery.sglide.js"></script>
-<!-- <script type="text/javascript" src="sglide.js"></script> -->
+<!-- <script src="http://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="jquery.sglide.js"></script> -->
+<script type="text/javascript" src="sglide.js"></script>
 <!-- <script type="text/javascript" src="../../~web~/sGlide/jquery.sglide.2.min.js"></script> -->
 <!-- <script type="text/javascript" src="../../~web~/sGlide/sglide.2.1.1.min.js"></script> -->
 
 <script type="text/javascript">
 	function run(){
-		/*sglideArr = [];
+		sglideArr = [];
 		// var elsArr = document.getElementsByClassName('slider_bar');
 		var elsArr = [document.getElementById('slider1')];
 		var pct = document.getElementById('percent');
 
-		for (var i = 0; i < elsArr.length; i++) {
-			sglideArr.push(new sGlide(elsArr[i], {
-				'startAt': 30*(i+1),
+		var cb = function(o){
+			// console.log('> context',this);
+			pct.innerHTML = o.id+': '+Math.round(o.percent) + '%';
+			// document.getElementById('percent').innerHTML = o.id+': '+Math.round(o.value) + '%';
+		};
+
+		// for (var i = 0; i < elsArr.length; i++) {
+		for (const el of elsArr){
+			sglideArr.push(new sGlide(el, {
+				'startAt': 65,
 				'height': 20,
-				'width': 600,
-				'unit': 'px',
-				// 'image': 'img/knob_.png',
+				'width': 85,
+				// 'unit': 'px',
+				'image': 'img/knob_.png',
 				'pill': false,
 				'snap': {
 					'marks': true,
 					'type': 'hard',
-					'points': 11
+					'points': 7
 					// 'sensitivity': 1
 				},
 				// 'colorShift': ['#3a4d31', '#7bb560'],
 				// 'vertical': true,
-				// 'buttons': true,
+				'buttons': true,
 				'totalRange': [-58,102],
 				// 'disabled': true,
-				drop: function(o){
-					// console.log('> drop',o);
-					// console.log(o.id,o.value, this.element);
-					// document.getElementById('percent').innerHTML = o.id+': '+Math.round(o.value) + '%';
-				},
-				drag: function(o){
-					console.log('> drag',o.percent);
-					pct.innerHTML = o.id+': '+Math.round(o.percent) + '%';
-				}
+				// 'drag': cb,
+				'onSnap': cb,
+				'onButton': cb
 			}));
 		}
-		console.log('sglideArr',sglideArr);*/
+		// elsArr[0].addEventListener('sGlide.ready', data => console.log('>> loaded', data.detail));
+		sglideArr[0].load(function(data){	// can't use arrow function as it loses context
+			console.log('>> load!', data, this);
+			// this.destroy();
+		}).startAt(33.33);
+		console.log('sGlideArr',sglideArr);
 
-		var $pct = $('#percent');
+		/*var $pct = $('#percent');
 		$('.slider_bar').sGlide({
 			'startAt': 33,
-			'width': 65,
+			'width': 35,
 			'height': 22,
 			// 'unit': 'px',
 			// 'image': 'img/knob_.png',
@@ -81,24 +87,25 @@
 			// 'locked': true,
 			'snap': {
 				'marks': true,
-				// 'type': 'soft',
-				'points': 11
+				'type': 'hard',
+				'points': 8
 				// 'sensitivity': 3
 			},
 			// 'colorShift': ['#3a4d31', '#7bb560'],
-			// 'vertical': true,
+			'vertical': true,
 			'buttons': true,
 			// 'disabled': true,
 			drag: function(o){
 				// console.log('> drag',o);//,o.id,o);
 				$pct.text(Math.round(o.percent)+'%');
 			},
-			onSnap: function(o){
-				// console.log('> onButton',o.percent);//,o.id,o);
+			onButton: function(o){
+				$pct.text(Math.round(o.percent)+'%');
+				// console.log('> onButton',o.percent, o.custom);//,o.id,o);
 			}
 		})//;
 		//$('.slider_bar')
-		.on('sGlide.ready', (e, data) => console.log('>> ready', data));
+		.on('sGlide.ready', (e, data) => console.log('>> ready', data));*/
 
 		// setTimeout(function(){
 		// 	$('.slider_bar').sGlide('destroy');

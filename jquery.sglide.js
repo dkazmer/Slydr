@@ -8,7 +8,7 @@ version:	3.0.0
 test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 	version history:
-		3.0.0	chainable; added jQuery 3 support; added resize support; removed orientation-change support; removed onload callback to favour custom event (ready); restored 'custom' property to output on ready; rebuilt snapmark & more accurate snapping (03.01.2018)
+		3.0.0	chainable; added jQuery 3 support; added resize support; removed orientation-change support; removed onload callback to favour custom event (ready); restored 'custom' property to output on ready; rebuilt snapmarks & more accurate snapping; other minor snap improvements & bug fixes (03.01.2018)
 		2.3.0	add 2 extra snap points to the previous maximum for the ability to snap every 10% (24.04.2017)
 		2.2.0	added snap sensitivity - accepts decimal values between 0 & 3 inclusive
 		2.1.2	bug fix: text inputs were not selectable by mouse-drag in Chrome for jQuery - a proper if statement in the document's mousemove event listener solved it, thereby possibly increasing performance (applied to both jQuery and standalone) (01.02.2015)
@@ -371,6 +371,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				});
 
 				var self_width = self.width();
+				var self_width_round = Math.round(self_width); 	// float value will blur vertical
 
 				var cssContentBox = {
 					'-webkit-box-sizing': 'content-box',
@@ -390,11 +391,11 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					'-moz-transform': 'rotate(-90deg)',
 					'-ms-transform': 'rotate(-90deg)',
 					'transform': 'rotate(-90deg)',
-					'-webkit-transform-origin': self_width+'px 0',
-					'-khtml-transform-origin': self_width+'px 0',
-					'-moz-transform-origin': self_width+'px 0',
-					'-ms-transform-origin': self_width+'px 0',
-					'transform-origin': self_width+'px 0',
+					'-webkit-transform-origin': self_width_round+'px 0',
+					'-khtml-transform-origin': self_width_round+'px 0',
+					'-moz-transform-origin': self_width_round+'px 0',
+					'-ms-transform-origin': self_width_round+'px 0',
+					'transform-origin': self_width_round+'px 0',
 					'filter': 'progid:DXImageTransform.Microsoft.BasicImage(rotation=3)'
 				};
 
@@ -431,27 +432,28 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					if (snaps === 1) snaps = 2;
 
 					// pixels
-					var w = self_width - kw;
-					var increment = w / (snaps - 1);
-					var snapValues = [0];
-					var step = increment;
+					// var w = self_width - kw;
+					// var increment = w / (snaps - 1);
+					// var snapValues = [0];
+					// var step = increment;
 
 					//on some browsers knob.width = 0 which makes increment 0 and creates an infinite loop
-					if (increment < 1) increment = 1;
+					// if (increment < 1) increment = 1;
 
-					while (step <= w+2){	// added 2px to fix glitch when drawing last mark at 7 or 8 snaps (accounts for decimal)
+					/*while (step <= w+2){	// added 2px to fix glitch when drawing last mark at 7 or 8 snaps (accounts for decimal)
 						snapValues.push(step);
 						step += increment;
-					}
+					}*/
 
 					// percentage
-					increment = 100 / (snaps - 1);
-					step = increment;
+					var increment = 100 / (snaps - 1);
+					var step = increment;
 					while (step <= 101){	// added 1% to fix glitch when drawing last mark at 7 or 8 snaps (accounts for decimal)
 						snapPctValues.push(step);
 						step += increment;
 					}
 
+					snapPctValues[snapPctValues.length-1] = 100;
 					snapping_on = true;
 
 					// markers
@@ -545,6 +547,8 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 				// -----------
 
+				var idx = null;	// snapPctValues index
+
 				// buttons
 				var drawButtons = function(){
 					knob_adjust = knob.width() / self_width * 50;
@@ -595,15 +599,22 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					var knobWidth = knob.width();
 					var set_value = THE_VALUE = valueObj[guid];
 					if (btn_snap){
-						var intvl = 100 / (settings.snap.points - 1);
-						var p = intvl;
-						for (var i = 0; i < settings.snap.points; i++){
-							if (intvl >= THE_VALUE){
-								if (direction === '>')	THE_VALUE = (Math.round(intvl) > Math.round(THE_VALUE) ? intvl : intvl+p);
-								else					THE_VALUE = intvl-p;
-								break;
-							} else intvl += p;
+						if (idx === null){
+							for (var i = 0; i < snapPctValues.length; i++){
+								if (snapPctValues[i] >= THE_VALUE){
+									if (direction === '>') idx = i-1;
+									else idx = i;
+									break;
+								}
+							}
 						}
+
+						if (direction === '>'){
+							if (snaps-1 > idx) idx++;
+						} else {
+							if (idx > 0) idx--;
+						}
+						THE_VALUE = snapPctValues[idx];
 					} else {
 						if (direction === '>')	THE_VALUE += (smoothBln ? 1 : 10);
 						else					THE_VALUE -= (smoothBln ? 1 : 10);
@@ -668,6 +679,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 								if (closest === null || Math.abs(this - m) < Math.abs(closest - m)){
 									closest = Math.round(this) | 0;
 									pctVal = snapPctValues[i];
+									idx = i;
 								}
 							});
 
@@ -787,8 +799,11 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 							knob.css('left', '0');
 							follow.css('width', stopper+'px');
 						} else if (x >= self_width-stopper){
-							knob.css('left', (self_width-knobWidth)+'px');
-							follow.css('width', (self_width-stopper)+'px');
+							// make these numbers global, turn into % and replace last index of snapPctValues
+							if (!is_snap){
+								knob.css('left', (self_width-knobWidth)+'px');
+								follow.css('width', (self_width-stopper)+'px');
+							}
 						} else {
 							knob.css('left', (x-stopper)+'px');
 							follow.css('width', x+'px');
@@ -835,6 +850,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				});
 
 				$(window).on('resize.'+guid, function(){
+					var val = null;
 					var kw	= knob.width();
 					var pos	= THE_VALUE / 100 * (self.width() - kw) + (kw/2);
 
@@ -914,7 +930,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					is_down = true;
 					self.data('state', 'active');
 
-					if (!isMobile && snapType !== 'hard'){
+					if (!isMobile){// && snapType !== 'hard'){
 						var x = null;
 						if (vert){
 							var base = self.position().top + sw;
@@ -928,12 +944,13 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 							knob.css('left', '0');
 						} else if (m >= sw-kw){
 							m = sw-kw;
-							knob.css('left', sw-kw+'px');
+							knob.css('left', m+'px');
 						}
 
 						knob.css('left', m+'px');
 						follow.css('width', m+(kw/2)+'px');
-						
+
+						if (!snapType || snapType === 'hard') doSnap('drag', m);
 
 						// color change
 						if (colorChangeBln) colorChange(getPercent(m));
