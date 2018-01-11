@@ -77,9 +77,9 @@ function sGlide(self, options){
 		buttons			= false,
 		keyCtrl			= false,
 		keyCtrlShift	= false,
-		colorChangeBln	= false,
+		colorChangeBln	= false;
 		// events
-		eventDocumentMouseUp	= null,
+	var eventDocumentMouseUp	= null,
 		eventDocumentMouseMove	= null,
 		eventDocumentMouseDown	= null,
 		eventDocumentKeyUp		= null,
@@ -90,9 +90,9 @@ function sGlide(self, options){
 		eventBarMouseDown		= null,
 		eventPlusMinusMouseUp	= null,
 		eventPlusMouseDown		= null,
-		eventMinusMouseDown		= null,
+		eventMinusMouseDown		= null;
 		// event states prelim
-		mEvt	= {
+	var mEvt	= {
 			'down'	: 'mousedown',
 			'up'	: 'mouseup',
 			'move'	: 'mousemove'
@@ -101,38 +101,21 @@ function sGlide(self, options){
 
 	this.element = self;
 
-	// CustomEvent polyfill for IE -------> add this to GIT readme
-	/*if (!(CustomEvent instanceof Function)){
-	// if (typeof CustomEvent === 'undefined'){
-		(function(){
-			function CustomEvent(event, params){
-				params = params || { bubbles: false, cancelable: false, detail: undefined };
-				// var evt = document.createEvent('CustomEvent');
-				var evt = document.createEvent('CustomEvent');
-				evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
-				return evt;
-			}
-
-			CustomEvent.prototype = window.Event.prototype;
-			window.CustomEvent = CustomEvent;
-		})();
-	}*/
-
 	//------------------------------------------------------------------------------------------------------------------------------------
 	// public methods
 
-	this.destroy = function(){
-		var guid = self.getAttribute('id');
+	this.destroy = () => {
+		const guid = self.getAttribute('id');
 
 		// unwrap vertical buttons
-		var vertContainer = $('#'+guid+'_vert-marks')[0];
+		const vertContainer = $('#'+guid+'_vert-marks')[0];
 		if (vertContainer){
-			var vertParent = vertContainer.parentNode;
+			const vertParent = vertContainer.parentNode;
 			vertParent.insertBefore(self, vertContainer.nextSibling);
 			vertParent.removeChild(vertContainer);
 		}
 
-		var markers = $('#'+guid+'_markers')[0];
+		const markers = $('#'+guid+'_markers')[0];
 		if (markers) markers.parentNode.removeChild(markers);
 
 		if (isMobile){
@@ -144,8 +127,8 @@ function sGlide(self, options){
 
 		// remove buttons
 		if (buttons){
-			var plus = $('#'+guid+'_plus')[0], minus = $('#'+guid+'_minus')[0];
-			var buttonsParent = plus.parentNode;
+			const plus = $('#'+guid+'_plus')[0], minus = $('#'+guid+'_minus')[0];
+			const buttonsParent = plus.parentNode;
 			plus.removeEventListener(mEvt.up, eventPlusMinusMouseUp);
 			plus.removeEventListener(mEvt.down, eventPlusMouseDown);
 			minus.removeEventListener(mEvt.up, eventPlusMinusMouseUp);
@@ -154,9 +137,9 @@ function sGlide(self, options){
 			buttonsParent.removeChild(minus);
 			// unwrap
 			if (!vertContainer){
-				var buttonsContainer = $('#'+guid+'_button-marks')[0];
+				const buttonsContainer = $('#'+guid+'_button-marks')[0];
 				if (buttonsContainer){
-					var buttonsContainerParent = buttonsContainer.parentNode;
+					const buttonsContainerParent = buttonsContainer.parentNode;
 					buttonsContainerParent.insertBefore(buttonsContainer.childNodes[0], buttonsContainer.nextSibling);
 					buttonsContainerParent.removeChild(buttonsContainer);
 				}
@@ -176,20 +159,20 @@ function sGlide(self, options){
 		for (var i in this) delete this[i];
 	};
 
-	this.startAt = function(pct){
+	this.startAt = pct => {
 		THE_VALUE = pct;
 
 		// set pixel positions
-		var selfWidth = self.offsetWidth;
-		var knobWidth = knob.offsetWidth;
+		const selfWidth = self.offsetWidth;
+		const knobWidth = knob.offsetWidth;
 
 		// constraints
 		if (pct <= 0)			pct = 0;
 		else if (pct >= 100)	pct = 100;
 
 		// set pixel positions
-		var px = (selfWidth - knobWidth) * pct / 100 + (knobWidth / 2);
-		var pxAdjust = px - (knobWidth / 2);
+		const px = (selfWidth - knobWidth) * pct / 100 + (knobWidth / 2);
+		const pxAdjust = px - (knobWidth / 2);
 
 		// gui
 		knob.style.left = pxAdjust+'px';
@@ -203,29 +186,28 @@ function sGlide(self, options){
 	};
 
 	var callback = null;
-	var notifier = function(fn){ callback = fn; };
-	self.addEventListener('sGlide.ready', function(data){ if (callback) callback.call(that, data.detail); });
+	const notifier = fn => callback = fn;
+	self.addEventListener('sGlide.ready', data => {if (callback) callback.call(that, data.detail)});
 	this.load = notifier;
 
 	//------------------------------------------------------------------------------------------------------------------------------------
 	// private global functions
 
-	var $ = function(name){
-		return document.querySelectorAll(name);
-	};
+	// const $ = name => document.querySelectorAll(name);
+	const $ = name => document.querySelectorAll(name);
 
-	function wrapAll(elements, wrapperStr){
+	const wrapAll = (elements, wrapperStr) => {
 		// set wrapper element
-		var a = document.createElement('div');
+		const a = document.createElement('div');
 		a.innerHTML = wrapperStr;
-		var wrapperEl = a.childNodes[0];
+		const wrapperEl = a.childNodes[0];
 		elements[0].parentNode.insertBefore(wrapperEl, elements[0]);
 
 		// append it
 		for (var i = 0; i < elements.length; i++) wrapperEl.appendChild(elements[i]);
-	}
+	};
 
-	function clone(obj){
+	const clone = obj => {
 		if (obj === null || typeof(obj) != 'object') return obj;
 
 		var temp = obj.constructor(); // changed
@@ -237,22 +219,20 @@ function sGlide(self, options){
 		}
 
 		return temp;
-	}
+	};
 
-	// from https://gist.github.com/pbojinov/8f3765b672efec122f66
-	function extend(destination, source){
-		for (var property in source){
-			if (source[property] && source[property].constructor && source[property].constructor === Object){
-				destination[property] = destination[property] || {};
-				arguments.callee(destination[property], source[property]);
-			} else {
-				destination[property] = source[property];
+	const extend = (defaults, options) => {
+		for (key in options){
+			let val = options[key];
+			if (val && val.constructor && val.constructor.name === 'Object'){
+				defaults[key] = options[key] = extend(defaults[key], val);
 			}
 		}
-		return destination;
-	}
 
-	function css(el, styles, prefixes){
+		return Object.assign(defaults, options);
+	};
+
+	const css = (el, styles, prefixes) => {
 		var cssString = '';
 
 		if (prefixes){
@@ -274,9 +254,9 @@ function sGlide(self, options){
 		}
 
 		el.style.cssText += ';' + cssString;
-	}
+	};
 
-	(function(document, that){
+	{
 
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// validate params
@@ -287,7 +267,7 @@ function sGlide(self, options){
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// build skeleton
 
-		var guid = self.id;
+		let guid = self.id;
 
 		// no id? give one!
 		if (!guid) guid = self.id = 'sglide-'+Math.random(1, 999);
@@ -306,7 +286,7 @@ function sGlide(self, options){
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// settings & variables
 
-		var settings = extend({
+		let settings = extend({
 			'startAt'		: 0,
 			'image'			: '',	// full path of image
 			'height'		: 40,
@@ -339,7 +319,7 @@ function sGlide(self, options){
 			uAgent.match(/BlackBerry/i)){
 			isMobile = true;
 			mEvt.down = 'touchstart'; mEvt.up = 'touchend'; mEvt.move = 'touchmove';
-			var touchX = null, touchY = null;
+			let touchX = null, touchY = null;
 		} else if (uAgent.match(/Windows Phone/i)){
 			if (window.navigator.msPointerEnabled){
 				css(self, {'-ms-touch-action': 'none'});
@@ -351,8 +331,8 @@ function sGlide(self, options){
 
 		// local variables
 		THE_VALUE			= settings.startAt;
-
-		var result			= 0,
+		
+		let result			= 0,
 			vert			= settings.vertical,
 			is_snap			= (settings.snap.points > 0 && settings.snap.points <= 11),
 			markers			= (is_snap && settings.snap.marks),
@@ -367,7 +347,7 @@ function sGlide(self, options){
 			customRange		= (settings.totalRange[0] !== 0 || settings.totalRange[1] !== 0) && settings.totalRange[0] < settings.totalRange[1],
 			MSoffsetTop		= null,
 			vmarks			= null;
-			
+
 		colorChangeBln		= (settings.colorShift.length > 1);
 		keyCtrl				= (self.getAttribute('data-keys') === 'true');
 		keyCtrlShift		= (self.getAttribute('data-keys') === 'shift');
@@ -381,23 +361,21 @@ function sGlide(self, options){
 
 			// retina handling
 			if (retina){
-				var rpathTemp = path.split('.');
-				var rpathTemp_length = rpathTemp.length;
+				let rpathTemp = path.split('.');
 
-				rpathTemp[rpathTemp_length-2] = rpathTemp[rpathTemp_length-2] + '@2x';
+				rpathTemp[rpathTemp.length-2] = rpathTemp[rpathTemp.length-2] + '@2x';
 				path = '';
-				for (var i = 0; i < rpathTemp_length; i++){
-					path += rpathTemp[i] + ((i < rpathTemp_length-1) ? '.' : '');
+				for (let i = 0; i < rpathTemp.length; i++){
+					path += rpathTemp[i] + ((i < rpathTemp.length-1) ? '.' : '');
 				}
 			}
 
-			var img = new Image();
+			let img = new Image();
 			img.onload = imgLoad;
 			img.src = path;
 
 			knob.appendChild(img);
-			// knob.innerHTML = '<img src="'+path+'" style="visibility:hidden" />';
-			// knob.childNodes[0].onload = function(){
+
 			function imgLoad(){
 				if (retina)
 					img.style.width = (img.offsetWidth / 2) + 'px';
@@ -412,7 +390,7 @@ function sGlide(self, options){
 				// apply knob image styles
 				knob.style.width = knob_width;
 				knob.style.height = knob_height;
-				setTimeout(function(){
+				setTimeout(() => {
 					knob.style.background = knob_bg;
 					if (retina) knob.style.backgroundSize = '100%';
 				}, 0);
@@ -454,7 +432,7 @@ function sGlide(self, options){
 			var d = settings.height / 2;
 			css(self, {'border-radius': (r_corners ? d+'px' : '0'), 'overflow': 'hidden'});
 			css(follow, {'border-radius': (r_corners ? d+'px 0 0 '+d+'px' : '0')});
-			setTimeout(function(){
+			setTimeout(() => {
 				knob.style.backgroundColor = knob_bg;	// IE patch
 				self.dispatchEvent(eventMakeReady);
 			}, 0);
@@ -464,12 +442,12 @@ function sGlide(self, options){
 		// styles
 
 		// validate some user settings
-		var unit = settings.unit, width = settings.width;
+		let unit = settings.unit, width = settings.width;
 		if (unit != 'px' && unit != '%') unit = '%';
 		else if (unit == 'px') width = Math.round(width);
 		else if (unit == '%' && Math.round(width) > 100) width = 100;
 
-		var cssPrefixes		= ['-webkit-', '-khtml-', '-moz-', '-ms-', '-o-', ''],
+		let cssPrefixes		= ['-webkit-', '-khtml-', '-moz-', '-ms-', '-o-', ''],
 			cssBorderBox	= {'box-sizing': 'border-box'},
 			cssContentBox	= {'box-sizing': 'content-box'},
 			cssUserSelect	= {'user-select': 'none'},
@@ -510,12 +488,12 @@ function sGlide(self, options){
 		// snap marks, buttons, vertical
 
 		// snap to
-		var marks = null;
-		var snaps = Math.round(settings.snap.points);
-		var snapping_on = false;
-		var snapPctValues = [0];
+		let marks = null;
+		let snaps = Math.round(settings.snap.points);
+		let snapping_on = false;
+		let snapPctValues = [0];
 
-		var setSnapValues = function(resize){
+		const setSnapValues = () => {
 			var kw = knob.offsetWidth;
 			if (snaps === 1) snaps = 2;
 
@@ -532,7 +510,7 @@ function sGlide(self, options){
 			if (markers) drawSnapmarks(kw);
 		};
 
-		var drawSnapmarks = function(kw){
+		const drawSnapmarks = kw => {
 			var selfWidth = self.offsetWidth;
 			self.insertAdjacentHTML('afterend', '<div id="'+guid+'_markers"></div>');
 			marks = $('#'+guid+'_markers')[0];
@@ -546,13 +524,13 @@ function sGlide(self, options){
 			css(marks, {'user-select': 'none'}, cssPrefixes);
 
 			if (marks){
-				var str = '';
-				var val = null;
+				let str = '';
+				let val = null;
 
 				css(marks, {'width': selfWidth+'px'});
 
 				// by px
-				for (var i = snaps - 1; i >= 0; i--){
+				for (let i = snaps - 1; i >= 0; i--){
 					val = (selfWidth - kw) / (snaps-1) * i + (kw/2);
 					str += '<div style="width:0; height:5px; border-left:#333 solid 1px; position:absolute; left:'+val+'px"></div>';
 				}
@@ -569,10 +547,10 @@ function sGlide(self, options){
 		// -----------
 
 		// vertical
-		var verticalTransform = function(){
+		const verticalTransform = () => {
 			var vertWidth = Math.round(self.offsetWidth);
 			if (markers && is_snap){
-				var a = [self, $('#'+guid+'_markers')[0]];
+				let a = [self, $('#'+guid+'_markers')[0]];
 
 				wrapAll(a, '<div id="'+guid+'_vert-marks" style="margin:0; z-index:997; width:'+width+unit+
 					'; -webkit-backface-visibility:hidden; -moz-backface-visibility:hidden; -ms-backface-visibility:hidden; backface-visibility:hidden"></div>');
@@ -585,8 +563,9 @@ function sGlide(self, options){
 				css(vmarks, {'filter': 'progid:DXImageTransform.Microsoft.BasicImage(rotation=3)'});
 				css(vmarks, {'transform-origin': vertWidth+'px 0'}, cssPrefixes);
 
-				// for (var i = 0; i < a.length; i++)
-				// 	css(a[i], {'margin': '0'});
+				// for (let item of a){
+				// 	css(item, {'margin': '0'});
+				// }
 			} else {
 				// check whether even by even or odd by odd to fix blurred elements
 				css(self, {'margin': '0', 'top': '0', 'left': '0'});
@@ -600,10 +579,10 @@ function sGlide(self, options){
 
 		// -----------
 
-		var idx = null;	// snapPctValues index
+		let idx = null;	// snapPctValues index
 
 		// buttons
-		var drawButtons = function(){
+		const drawButtons = () => {
 			knob_adjust = knob.offsetWidth / self.offsetWidth * 50;
 
 			var vertStyles	= '; z-index:1000; position:relative; top:30px',
@@ -611,10 +590,10 @@ function sGlide(self, options){
 				minusStr	= '<div class="sglide-buttons" id="'+guid+'_minus" style="display:inline-block; cursor:pointer'+(vert ? vertStyles : '')+'">&nbsp;&minus;&nbsp;</div>';
 
 			if (markers){
-				var q = null;
+				let q = null;
 				if (!vert){
 					css(self, {'width': 'auto'});
-					var a = (vert) ? [$('#'+guid+'_vert-marks')[0]] : [$('#'+guid)[0], $('#'+guid+'_markers')[0]];
+					let a = (vert) ? [$('#'+guid+'_vert-marks')[0]] : [$('#'+guid)[0], $('#'+guid+'_markers')[0]];
 					wrapAll(a, '<div id="'+guid+'_button-marks" style="display:inline-block; vertical-align:middle; width:'+width+unit+'"></div>');
 					q = $('#'+guid+'_button-marks');
 				} else {
@@ -646,11 +625,13 @@ function sGlide(self, options){
 				minusBtn.addEventListener(mEvt.down, eventMinusMouseDown);
 				minusBtn.addEventListener(mEvt.up, btnClearAction);
 			}
-		}, btnTriggers = function(direction, smoothBln){
+		};
+
+		const btnTriggers = (direction, smoothBln) => {
 			// var set_value = THE_VALUE = valueObj[guid];
 			if (btn_snap){
 				if (idx === null){
-					for (var i = 0; i < snapPctValues.length; i++){
+					for (let i = 0; i < snapPctValues.length; i++){
 						if (snapPctValues[i] >= THE_VALUE){
 							if (direction === '>') idx = i-1;
 							else idx = i;
@@ -673,8 +654,8 @@ function sGlide(self, options){
 			set_value = THE_VALUE;	// leave THE_VALUE out of visual adjustments
 
 			// constraints
-			if ((THE_VALUE+knob_adjust) > 100)	{ THE_VALUE = 100; set_value = 100 /*- knob_adjust*/; }
-			else if (THE_VALUE-knob_adjust < 0)	{ THE_VALUE = 0; set_value = 0 /*+ knob_adjust*/; }
+			if ((THE_VALUE+knob_adjust) > 100)	{ THE_VALUE = 100; set_value = 100; }
+			else if (THE_VALUE-knob_adjust < 0)	{ THE_VALUE = 0; set_value = 0; }
 
 			// set pixel positions
 			var px = (self.offsetWidth - knob.offsetWidth) * set_value / 100 + (knob.offsetWidth / 2);
@@ -688,53 +669,43 @@ function sGlide(self, options){
 			// output
 			THE_VALUE = getPercent(pxAdjust);
 			if (options.onButton) options.onButton.call(that, updateME(THE_VALUE));
-		}, btnHold = function(dir){
-			var btnHold_timer = setInterval(function(){
+		};
+
+		const btnHold = dir => {
+			var btnHold_timer = setInterval(() => {
 				if (btn_is_down) btnTriggers(dir, true);
 				else clearInterval(btnHold_timer);
 			}, (btn_snap ? 101 : 10));
-		}, btnClearAction = function(){
+		};
+
+		const btnClearAction = () => {
 			btn_is_down = false;
 			clearTimeout(btn_timers);
-		}, knob_adjust = 0, btn_is_down = false, btn_timers = null;
+		};
+
+		var knob_adjust = 0, btn_is_down = false, btn_timers = null;
 		var btn_snap = (is_snap && (snapType === 'hard' || snapType === 'soft'));
 
 		// button and arrow key events
 		eventPlusMinusMouseUp	= btnClearAction;
-		eventPlusMouseDown		= function(){
-			eventPlusMinusMouseDown('>');
-		};
-		eventMinusMouseDown		= function(){
-			eventPlusMinusMouseDown('<');
-		};
-		var eventPlusMinusMouseDown = function(dir){
+		eventPlusMouseDown		= () => eventPlusMinusMouseDown('>');
+		eventMinusMouseDown		= () => eventPlusMinusMouseDown('<');
+		const eventPlusMinusMouseDown = dir => {
 			btn_is_down = true;
 			btnTriggers(dir);
-			btn_timers = setTimeout(function(){
-				btnHold(dir);
-			}, 500);
+			btn_timers = setTimeout(() => btnHold(dir), 500);
 		};
 
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// events
 
 		// knob
-		var is_down = false;
-
-		/*eventKnobMouseDown = function(){
-			is_down = true;
-			self.setAttribute('data-state', 'active');
-		};
-		eventKnobMouseUp = function(){
-			is_down = false;
-		};
-
-		knob.addEventListener(mEvt.down, eventKnobMouseDown);
-		knob.addEventListener(mEvt.up, eventKnobMouseUp);*/
+		let is_down = false;
 
 		// snapping
-		var storedSnapValue = 's-1';
-		var doSnap = function(kind, m){
+		let storedSnapValue = 's-1';
+
+		const doSnap = (kind, m) => {
 			if (is_snap){	// min 1, max 9
 				var sense = settings.snap.sensitivity;
 
@@ -745,19 +716,22 @@ function sGlide(self, options){
 						snapOffset	= (sense && sense > 0 && sense < 4 ? (sense + 1) * 5 : 15) - 3;
 
 					// % to px
-					var snapPixelValues = [];
-					for (var j = 0; j < snapPctValues.length; j++){
-						snapPixelValues.push((selfWidth - knobWidth) * snapPctValues[j] / 100);
+					let snapPixelValues = [];
+					// for (var j = 0; j < snapPctValues.length; j++){
+					for (let pct of snapPctValues){
+						snapPixelValues.push((selfWidth - knobWidth) * pct / 100);
 					}
 
 					// get closest px mark, and set %
-					var closest = null, pctVal = 0;
-					for (var i = 0; i < snapPixelValues.length; i++) {
-						if (closest === null || Math.abs(snapPixelValues[i] - m) < Math.abs(closest - m)){
-							closest = snapPixelValues[i];
+					let closest = null, pctVal = 0, i = 0;
+					// for (let i = 0; i < snapPixelValues.length; i++){
+					for (let pxl of snapPixelValues){
+						if (closest === null || Math.abs(pxl - m) < Math.abs(closest - m)){
+							closest = pxl;
 							pctVal = snapPctValues[i];
 							idx = i;
 						}
+						i++;
 					}
 
 					// physically snap it
@@ -780,7 +754,9 @@ function sGlide(self, options){
 					}
 				}
 			}
-		}, doOnSnap = function(a, b){ // callback: onSnap
+		};
+
+		const doOnSnap = (a, b) => { // callback: onSnap
 			if (options.onSnap && 's'+a !== storedSnapValue){
 				storedSnapValue = 's'+a;
 				THE_VALUE = getPercent(a);
@@ -791,11 +767,11 @@ function sGlide(self, options){
 		// keyboard controls
 		// if keyboard control enabled or shift additionally required
 		if (!isMobile && (keyCtrl || keyCtrlShift) && !settings.disabled){
-			var keycode, keydown = false, shifted = false,
+			let keycode, keydown = false, shifted = false,
 				codeBack	= vert ? 40 : 37,
 				codeFwd		= vert ? 38 : 39;
 
-			eventDocumentKeyDown = function(e){
+			eventDocumentKeyDown = e => {
 				if (!keydown){
 					if (window.event){
 						keycode = window.event.keyCode;
@@ -817,7 +793,7 @@ function sGlide(self, options){
 					}
 				}
 			};
-			eventDocumentKeyUp = function(){
+			eventDocumentKeyUp = () => {
 				keydown = false;
 				btnClearAction();
 			};
@@ -827,28 +803,27 @@ function sGlide(self, options){
 		}
 
 		if (isMobile){
-			eventDocumentMouseDown = function(e){
-				// is_down = false;
+			eventDocumentMouseDown = e => {
 				touchX = e.targetTouches[0].pageX;
 				touchY = e.targetTouches[0].pageY;
 			};
 			document.addEventListener(mEvt.down, eventDocumentMouseDown);
 		}
 
-		eventDocumentMouseMove = function(e){
+		eventDocumentMouseMove = e => {
 			if (is_down){
 				e = e || event;	// ie fix
 
-				var x			= null,
-					selfWidth	= self.offsetWidth,
-					knobWidth	= knob.offsetWidth;
+				const selfWidth	= self.offsetWidth;
+				const knobWidth	= knob.offsetWidth;
+				var x			= null;
 
 				if (vert){
 					// MS bug: manually set offsetTop, otherwise try to get the vertical wrapper's offsetTop
 					if (window.navigator.msPointerEnabled && MSoffsetTop === null) MSoffsetTop = self.getBoundingClientRect().top;
 					else if (vmarks !== null && MSoffsetTop === null) MSoffsetTop = vmarks.offsetTop;
 
-					var base = (MSoffsetTop !== null ? MSoffsetTop : self.offsetTop) + selfWidth;
+					let base = (MSoffsetTop !== null ? MSoffsetTop : self.offsetTop) + selfWidth;
 					if (isMobile){
 						touchY = e.targetTouches[0].pageY;
 						x = base - touchY;
@@ -860,7 +835,7 @@ function sGlide(self, options){
 					} else x = e.pageX - self.offsetLeft;
 				}
 
-				var stopper	= knobWidth / 2,
+				const stopper	= knobWidth / 2,
 					m		= x - stopper;
 
 				if (e.returnValue) e.returnValue = false;
@@ -895,21 +870,13 @@ function sGlide(self, options){
 					colorChange(THE_VALUE);
 			}
 		};
-		eventDocumentMouseUp = function(e){
+
+		eventDocumentMouseUp = e => {
 			is_down = false;
 			if (self.getAttribute('data-state') === 'active'){
 				e = e || event;	// ie fix
-				/*var x = null, base = 0, selfWidth = self.offsetWidth;
 
-				if (vert){
-					// base = self.offsetTop + selfWidth;
-					base = (!window.navigator.msPointerEnabled ? self.offsetTop : self.getBoundingClientRect().top) + selfWidth;
-					x = base - ((!isMobile ? e.pageY : touchY)-2);
-				} else x = (!isMobile ? e.pageX : touchX) - self.offsetLeft;*/
-				
-				var // knobWidth	= knob.offsetWidth,
-					// stopper		= knobWidth / 2,
-					m			= knob.offsetLeft;//x - stopper;	// true position of knob
+				const m = knob.offsetLeft;
 
 				// snap to
 				if (is_snap && (snapType === 'soft' || snapType === 'hard'))	// min 1, max 9
@@ -931,22 +898,17 @@ function sGlide(self, options){
 			if (btn_is_down) btnClearAction();
 		};
 
-		eventWindowResize = function(){
-			var val = null;
-			var kw	= knob.offsetWidth;
-			var selfWidth = self.offsetWidth;
-			// console.log('>> resize');
+		eventWindowResize = () => {
+			const kw	= knob.offsetWidth;
+			const selfWidth = self.offsetWidth;
 			that.startAt(THE_VALUE);
 
 			if (marks){
-				// css(marks, {'width': selfWidth+'px'});
+				let val = null;
 				marks.style.width = selfWidth+'px';
-				// console.log('>> childs', marks.children);
-				// const nodelist = document.querySelectorAll(‘.divy’)
-				var divArray = Array.prototype.slice.call(marks.children);
-				for (var i = divArray.length - 1; i >= 0; i--){
+				let divArray = Array.prototype.slice.call(marks.children);
+				for (let i = divArray.length - 1; i >= 0; i--){
 					val = (selfWidth - kw) / (snaps-1) * i + (kw/2);
-					// css(divArray[i], {'left': val+'px'});
 					divArray[i].style.left = val+'px';
 				}
 			}
@@ -964,14 +926,14 @@ function sGlide(self, options){
 			var diff = settings.totalRange[1] - cstmStart;
 		}
 
-		var getPercent = function(num){
+		const getPercent = num => {
 			var pct = num / (self.offsetWidth - knob.offsetWidth) * 100;
 			pct = Math.min(pct, 100);
 
 			return pct;
 		};
 
-		var updateME = function(pct){
+		const updateME = pct => {
 			// set data to send
 			var sendData = {
 				'percent': pct,
@@ -981,7 +943,7 @@ function sGlide(self, options){
 
 			// calculate unit
 			if (customRange){
-				var cstm = diff * pct / 100 + cstmStart;
+				let cstm = diff * pct / 100 + cstmStart;
 				sendData.custom = cstm;
 			}
 
@@ -989,8 +951,8 @@ function sGlide(self, options){
 		};
 
 		// color change
-		var colorShiftInit = function(){
-			// var selfHeightHalf = self.offsetHeight / 2;
+		const colorShiftInit = () => {
+			// const selfHeightHalf = self.offsetHeight / 2;
 			// var borderRadius = 'border-radius: '+(r_corners ? selfHeightHalf + 'px 0 0 ' + selfHeightHalf + 'px' : '0');
 			css(follow, {
 				'overflow': 'hidden',
@@ -999,12 +961,10 @@ function sGlide(self, options){
 
 			follow.innerHTML = '<div style="opacity:'+(settings.startAt/100)+'; height:100%; background-color:'+settings.colorShift[1]+'; "></div>';
 		};
-		var colorChange = function(pct){
-			// css(follow.childNodes[0], {'opacity': ''+(o/100)});
-			follow.children[0].style.opacity = pct / 100;
-		};
 
-		var eventBarMouseDown = function(e){
+		const colorChange = pct => follow.children[0].style.opacity = pct / 100;
+
+		const eventBarMouseDown = e => {
 			e = e || event;	// ie fix
 			if (e.returnValue) e.returnValue = false;	// wp
 
@@ -1012,9 +972,9 @@ function sGlide(self, options){
 			self.setAttribute('data-state', 'active');
 
 			if (!isMobile){// && snapType !== 'hard'){
-				var selfWidth = self.offsetWidth;
-				var knobWidth = knob.offsetWidth;
-				var x = null;
+				const selfWidth = self.offsetWidth;
+				const knobWidth = knob.offsetWidth;
+				let x = null;
 
 
 				if (vert){
@@ -1022,11 +982,11 @@ function sGlide(self, options){
 					if (window.navigator.msPointerEnabled && MSoffsetTop === null) MSoffsetTop = self.getBoundingClientRect().top;
 					else if (vmarks !== null && MSoffsetTop === null) MSoffsetTop = vmarks.offsetTop;
 
-					var base = (MSoffsetTop !== null ? MSoffsetTop : self.offsetTop) + selfWidth;
+					const base = (MSoffsetTop !== null ? MSoffsetTop : self.offsetTop) + selfWidth;
 					// var base = self.offsetTop + selfWidth;
 					x = base - (e.pageY-2);
 				} else x = e.pageX - self.offsetLeft;
-				var m = x - (knobWidth / 2);	// true position of knob
+				const m = x - (knobWidth / 2);	// true position of knob
 				
 				// constraint
 				if (m < 0){
@@ -1053,9 +1013,9 @@ function sGlide(self, options){
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// start
 
-		var setStartAt = function(e){
-			var num = THE_VALUE;
-			var rlt = updateME(num);
+		const setStartAt = e => {
+			const num = THE_VALUE;
+			const rlt = updateME(num);
 
 			if (customRange) rlt.custom = diff * num / 100 + cstmStart;
 
@@ -1070,13 +1030,13 @@ function sGlide(self, options){
 
 			self.removeEventListener('makeready.'+guid, setStartAt);
 
-			var ready = new CustomEvent('sGlide.ready', {'detail': rlt});
+			const ready = new CustomEvent('sGlide.ready', {'detail': rlt});
 			self.dispatchEvent(ready);
 			self.removeEventListener('sGlide.ready', null);
 		};
 
 		// Listen for image loaded
-		var eventMakeReady = new Event('makeready.'+guid);
+		const eventMakeReady = new Event('makeready.'+guid);
 		self.addEventListener('makeready.'+guid, setStartAt);
-	})(document, this);
+	};
 }

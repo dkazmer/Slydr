@@ -343,16 +343,14 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					var d = settings.height / 2;
 					self.css({'border-radius': (r_corners ? d+'px' : '0'), 'overflow': 'hidden'});
 					follow.css('border-radius', (r_corners ? d+'px 0 0 '+d+'px' : '0'));
-					setTimeout(function(){
-						$(el).trigger(eventMakeReady);
-					}, 0);
+					setTimeout(() => $(el).trigger(eventMakeReady), 0);
 				}
 
 				//------------------------------------------------------------------------------------------------------------------------------------
 				// styles
 
 				// validate some user settings
-				var unit = settings.unit, width = settings.width;
+				const unit = settings.unit, width = settings.width;
 				if (unit != 'px' && unit != '%') unit = '%';
 				else if (unit == 'px') width = Math.round(width);
 				else if (unit == '%' && Math.round(width) > 100) width = 100;
@@ -369,9 +367,9 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				});
 
 				var self_width = self.width();
-				var self_width_round = Math.round(self_width); 	// float value will blur vertical
+				const self_width_round = Math.round(self_width); 	// float value will blur vertical
 
-				var cssContentBox = {
+				const cssContentBox = {
 					'-webkit-box-sizing': 'content-box',
 					'-khtml-box-sizing': 'content-box',
 					'-moz-box-sizing': 'content-box',
@@ -422,17 +420,17 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 				// snap to
 				var marks = null;
-				var snaps = Math.round(settings.snap.points);
+				const snaps = Math.round(settings.snap.points);
 				var snapping_on = false;
 				var snapPctValues = [0];
 				// var is_snap = (snaps > 0 && snaps < 12) ? true : false;
 
-				var setSnapValues = function(){
-					var kw = knob.width();
+				const setSnapValues = () => {
+					const kw = knob.width();
 					if (snaps === 1) snaps = 2;
 
 					// percentage
-					var increment = 100 / (snaps - 1);
+					const increment = 100 / (snaps - 1);
 					var step = increment;
 					while (step <= 101){	// added 1% to fix glitch when drawing last mark at 7 or 8 snaps (accounts for decimal)
 						snapPctValues.push(step);
@@ -445,7 +443,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					if (markers) drawSnapmarks(kw);
 				};
 
-				var drawSnapmarks = function(kw){
+				const drawSnapmarks = kw => {
 					self.after('<div id="'+guid+'_markers"></div>');
 					marks = $('#'+guid+'_markers');
 					marks.css({
@@ -457,13 +455,13 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					}).css(cssUserSelect);
 
 					if (marks){
-						var str = '';
-						var val = null;
+						let str = '';
+						let val = null;
 
 						marks.css('width', self_width);
 
 						// by px
-						for (var i = snaps - 1; i >= 0; i--){
+						for (let i = snaps - 1; i >= 0; i--){
 							val = (self_width - kw) / (snaps-1) * i + (kw/2);
 							str += '<div style="width:0; height:5px; border-left:#333 solid 1px; position:absolute; left:'+val+'px"></div>';
 						}
@@ -480,20 +478,19 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				// -----------
 
 				// vertical
-				var verticalTransform = function(){
+				const verticalTransform = () => {
 					if (markers && is_snap){
-						var a = $('#'+guid+', #'+guid+'_markers');
+						const a = $('#'+guid+', #'+guid+'_markers');
 
 						a.wrapAll('<div id="'+guid+'_vert-marks" style="margin:0; z-index:997; width:'+width+unit+
 							'; -webkit-backface-visibility:hidden; -moz-backface-visibility:hidden; -ms-backface-visibility:hidden; backface-visibility:hidden"></div>');
 
-						var vmarks = $('#'+guid+'_vert-marks');
+						const vmarks = $('#'+guid+'_vert-marks');
 
 						self.css('width', '100%');
 						vmarks.css(cssContentBox).css(cssRotate);
 
-						// for (var i = 0; i < a.length; i++)
-						// 	a.css('margin', '0');
+						a.each((i, el) => $(el).css('margin', '0'));
 					} else {
 						// check whether even by even or odd by odd to fix blurred elements
 						self.css({
@@ -509,18 +506,18 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				var idx = null;	// snapPctValues index
 
 				// buttons
-				var drawButtons = function(){
+				const drawButtons = () => {
 					knob_adjust = knob.width() / self_width * 50;
 
-					var vertStyles	= '; z-index:1000; position:relative; top:30px',
+					const vertStyles	= '; z-index:1000; position:relative; top:30px',
 						plusStr		= '<div class="sglide-buttons" id="'+guid+'_plus" style="display:inline-block; cursor:pointer'+(vert ? vertStyles : '')+'">&nbsp;+&nbsp;</div>',
 						minusStr	= '<div class="sglide-buttons" id="'+guid+'_minus" style="display:inline-block; cursor:pointer'+(vert ? vertStyles : '')+'">&nbsp;&minus;&nbsp;</div>';
 
 					if (markers){
-						var q = null;
+						let q = null;
 						if (!vert){
 							self.css('width', 'auto');
-							var a = (vert) ? $('#'+guid+'_vert-marks') : $('#'+guid+', #'+guid+'_markers');
+							const a = (vert) ? $('#'+guid+'_vert-marks') : $('#'+guid+', #'+guid+'_markers');
 							a.wrapAll('<div id="'+guid+'_button-marks" style="display:inline-block; vertical-align:middle; width:'+width+unit+'"></div>');
 							q = $('#'+guid+'_button-marks');
 						} else {
@@ -539,27 +536,24 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 						self.before(minusStr);
 					}
 
-					var plusBtn		= $('#'+guid+'_plus'),
+					const plusBtn	= $('#'+guid+'_plus'),
 						minusBtn	= $('#'+guid+'_minus');
 
 					minusBtn.css(cssUserSelect);
 					plusBtn.css(cssUserSelect);
 
 					if (!settings.disabled){
-						plusBtn.on(mEvt.down, function(){
-							eventPlusMinusMouseDown('>');
-						}).on(mEvt.up, btnClearAction);
-
-						minusBtn.on(mEvt.down, function(){
-							eventPlusMinusMouseDown('<');
-						}).on(mEvt.up, btnClearAction);
+						plusBtn.on(mEvt.down, () => eventPlusMinusMouseDown('>')).on(mEvt.up, btnClearAction);
+						minusBtn.on(mEvt.down, () => eventPlusMinusMouseDown('<')).on(mEvt.up, btnClearAction);
 					}
-				}, btnTriggers = function(direction, smoothBln){
-					var knobWidth = knob.width();
+				};
+
+				const btnTriggers = (direction, smoothBln) => {
+					const knobWidth = knob.width();
 					var set_value = THE_VALUE = valueObj[guid];
 					if (btn_snap){
 						if (idx === null){
-							for (var i = 0; i < snapPctValues.length; i++){
+							for (let i = 0; i < snapPctValues.length; i++){
 								if (snapPctValues[i] >= THE_VALUE){
 									if (direction === '>') idx = i-1;
 									else idx = i;
@@ -577,7 +571,6 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					} else {
 						if (direction === '>')	THE_VALUE += (smoothBln ? 1 : 10);
 						else					THE_VALUE -= (smoothBln ? 1 : 10);
-
 					}
 
 					set_value = THE_VALUE;	// leave THE_VALUE out of visual adjustments
@@ -586,8 +579,8 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					else if (THE_VALUE-knob_adjust < 0)	{ THE_VALUE = set_value = 0 /*+ knob_adjust*/; }
 
 					// set pixel positions
-					var px = (self_width - knobWidth) * set_value / 100 + (knobWidth / 2);
-					var pxAdjust = px - knobWidth / 2;
+					const px = (self_width - knobWidth) * set_value / 100 + (knobWidth / 2);
+					const pxAdjust = px - knobWidth / 2;
 
 					// gui
 					knob.css('left', pxAdjust+'px');
@@ -598,15 +591,21 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					THE_VALUE = getPercent(pxAdjust);
 					if (options.onButton) options.onButton.call(self[0], updateME(THE_VALUE));
 					valueObj[guid] = THE_VALUE;
-				}, btnHold = function(dir){
-					var btnHold_timer = setInterval(function(){
+				};
+
+				const btnHold = dir => {
+					var btnHold_timer = setInterval(() => {
 						if (btn_is_down) btnTriggers(dir, (btn_snap ? false : true));
 						else clearInterval(btnHold_timer);
 					}, (btn_snap ? 101 : 10));
-				}, btnClearAction = function(){
+				};
+
+				const btnClearAction = () => {
 					btn_is_down = false;
 					clearTimeout(btn_timers);
-				}, knob_adjust = 0, btn_is_down = false, btn_timers = null;
+				};
+
+				var knob_adjust = 0, btn_is_down = false, btn_timers = null;
 				var btn_snap = (is_snap && (snapType === 'hard' || snapType === 'soft'));
 
 				//------------------------------------------------------------------------------------------------------------------------------------
@@ -617,24 +616,28 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 				// snapping
 				var storedSnapValue = 's-1';
-				var doSnap = function(kind, m){
+
+				const doSnap = (kind, m) => {//console.log('>> settings', is_snap, settings);
 					if (is_snap){	// min 1, max 9
-						var sense = (settings.snap.sensitivity !== undefined ? settings.snap.sensitivity : 2);
+						const sense = (settings.snap.sensitivity !== undefined ? settings.snap.sensitivity : 2);
 
 						// although snap is enabled, sensitivity may be set to nill, in which case marks are drawn but won't snap to
 						if (sense || snapType === 'hard' || snapType === 'soft'){
-							var kw			= knob.width(),
+							const kw		= knob.width(),
 								snapOffset	= (sense && sense > 0 && sense < 4 ? (sense + 1) * 5 : 15) - 3;
 
 							// % to px (needs to update on action)
-							var snapPixelValues = [];
-							for (var i = 0; i < snapPctValues.length; i++){
+							let snapPixelValues = [];
+							/*for (let i = 0; i < snapPctValues.length; i++){
 								snapPixelValues.push((self_width - kw) * snapPctValues[i] / 100);
+							}*/
+							for (let pct of snapPctValues){
+								snapPixelValues.push((self_width - kw) * pct / 100);
 							}
 
 							// get closest px mark, and set %
 							var closest = null, pctVal = 0;
-							$.each(snapPixelValues, function(i, n){
+							$.each(snapPixelValues, (i, n) => {
 								if (closest === null || Math.abs(n - m) < Math.abs(closest - m)){
 									closest = n | 0;
 									pctVal = snapPctValues[i];
@@ -662,14 +665,18 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 							}
 						}
 					}
-				}, doOnSnap = function(a, b){ // callback: onSnap
+				};
+
+				const doOnSnap = (a, b) => { // callback: onSnap
 					if (options.onSnap && 's'+a !== storedSnapValue){
 						if (b > 100) b = 100;	// patch
 						storedSnapValue = 's'+a;
 						THE_VALUE = getPercent(a);
 						if (options.onSnap) options.onSnap.call(self[0], updateME(THE_VALUE));
 					}
-				}, updateSnap = function(knobPos, followPos, animateBln){
+				};
+
+				const updateSnap = (knobPos, followPos, animateBln) => {
 					if (!animateBln){
 						knob.css('left', knobPos+'px');
 						follow.css('width', followPos+'px');
@@ -685,7 +692,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 						codeBack	= vert ? 40 : 37,
 						codeFwd		= vert ? 38 : 39;
 
-					$(document).on('keydown.'+guid, function(e){
+					$(document).on('keydown.'+guid, e => {
 						if (!keydown){
 							if (window.event){
 								keycode = window.event.keyCode;
@@ -706,41 +713,39 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 								}
 							}
 						}
-					}).on('keyup.'+guid, function(){
+					}).on('keyup.'+guid, () => {
 						keydown = false;
 						btnClearAction();
 					});
 				}
 
 				// button and arrow key events
-				var eventPlusMinusMouseDown = function(dir){
+				const eventPlusMinusMouseDown = dir => {
 					btn_is_down = true;
 					btnTriggers(dir);
-					btn_timers = setTimeout(function(){
-						btnHold(dir);
-					}, 500);
+					btn_timers = setTimeout(() => btnHold(dir), 500);
 				};
 
 				if (isMobile){
-					$(document).on(mEvt.down+'.'+guid, function(e){
+					$(document).on(mEvt.down+'.'+guid, e => {
 						// is_down = false;
 						touchX = e.originalEvent.touches[0].pageX;
 						touchY = e.originalEvent.touches[0].pageY;
 					});
 				}
 
-				$(document).on(mEvt.move+'.'+guid, function(e){
+				$(document).on(mEvt.move+'.'+guid, e => {
 					if (is_down){
 						e = e || event;	// ie fix
 
 						// e.preventDefault();
 						// e.stopPropagation();
 
-						var x			= null,
-							knobWidth	= knob.width();
+						let x				= null;
+						const	knobWidth	= knob.width();
 
 						if (vert){
-							var base = self.position().top + self_width;
+							let base = self.position().top + self_width;
 							if (isMobile){
 								touchY = e.originalEvent.touches[0].pageY;
 								x = base - touchY;
@@ -752,8 +757,8 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 							} else x = e.pageX - self.offset().left;
 						}
 
-						var stopper	= knobWidth / 2,
-							m		= x - stopper;
+						const stopper	= knobWidth / 2,
+							m			= x - stopper;
 
 						// if(event.preventDefault) event.preventDefault();
 						if (e.returnValue) e.returnValue = false;
@@ -774,7 +779,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 						}
 
 						result = knob[0].offsetLeft;
-						var state = self.data('state');
+						const state = self.data('state');
 						THE_VALUE = valueObj[guid] = getPercent(result);
 
 						// update values
@@ -785,13 +790,13 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 						if (colorChangeBln && state === 'active')
 							colorChange(THE_VALUE);
 					}
-				}).on(mEvt.up+'.'+guid, function(e){
-					var state = self.data('state');
+				}).on(mEvt.up+'.'+guid, e => {
+					const state = self.data('state');
 					is_down = false;
 					if (state === 'active'){
 						e = e || event;	// ie fix
 						
-						var m = knob[0].offsetLeft;
+						const m = knob[0].offsetLeft;
 
 						// snap to
 						if (is_snap && (snapType === 'soft' || snapType === 'hard'))	// min 1, max 9
@@ -813,10 +818,10 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					if (btn_is_down) btnClearAction();
 				});
 
-				$(window).on('resize.'+guid, function(){
-					var val = null;
-					var kw	= knob.width();
-					var pos	= THE_VALUE / 100 * (self.width() - kw) + (kw/2);
+				$(window).on('resize.'+guid, () => {
+					var val 	= null;
+					const kw	= knob.width();
+					const pos	= THE_VALUE / 100 * (self.width() - kw) + (kw/2);
 
 					knob.css('left', pos-(kw/2));
 					follow.css('width', pos);
@@ -824,7 +829,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 					if (marks){
 						marks.css('width', self_width)
-						.children('div').each(function(i, mark){
+						.children('div').each((i, mark) => {
 							val = (self_width - kw) / (snaps-1) * i + (kw/2);
 							$(mark).css('left', val);
 						});
@@ -839,14 +844,14 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					var diff = settings.totalRange[1] - cstmStart;
 				}
 
-				var getPercent = function(num){
+				const getPercent = num => {
 					var pct = num / (self_width - knob[0].offsetWidth) * 100;
 					pct = Math.min(pct, 100);
 
 					return pct;
 				};
 
-				var updateME = function(pct){
+				const updateME = pct => {
 					// set data to send
 					var sendData = {
 						'percent': pct,
@@ -856,7 +861,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 					// calculate unit
 					if (customRange){
-						var cstm = diff * pct / 100 + cstmStart;
+						const cstm = diff * pct / 100 + cstmStart;
 						sendData.custom = cstm;
 					}
 
@@ -864,7 +869,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				};
 
 				// color change
-				var colorShiftInit = function(){
+				const colorShiftInit = () => {
 					// var selfHeightHalf = self.offsetHeight / 2;
 					// var borderRadius = 'border-radius: '+(r_corners ? selfHeightHalf + 'px 0 0 ' + selfHeightHalf + 'px' : '0');
 					follow.css({
@@ -874,13 +879,11 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 					follow.html('<div style="opacity:'+(settings.startAt/100)+'; height:100%; background-color:'+settings.colorShift[1]+'; "></div>');
 				};
-				var colorChange = function(pct){
-					// follow.find('div').css('opacity', ''+(pct/100));
-					follow[0].children[0].style.opacity = pct / 100;
-				};
+
+				const colorChange = pct => follow[0].children[0].style.opacity = pct / 100;
 
 				// bar
-				var eventBarMouseDown = function(e){
+				const eventBarMouseDown = e => {
 					e = e || event;	// ie fix
 					e.stopPropagation();
 					e.preventDefault();
@@ -893,12 +896,12 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					self.data('state', 'active');
 
 					if (!isMobile){// && snapType !== 'hard'){
-						var x = null;
+						let x = null;
 						if (vert){
 							var base = self.position().top + sw;
 							x = base - (e.pageY-2);
 						} else x = e.pageX - self.offset().left;
-						var m = x - (kw / 2);	// true position of knob
+						let m = x - (kw / 2);	// true position of knob
 
 						// constraint
 						if (m < 0){
@@ -909,9 +912,9 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 							knob.css('left', m+'px');
 						}
 
-						knob.css('left', m+'px');
-						follow.css('width', m+(kw/2)+'px');
-
+						knob.css('left', m);
+						follow.css('width', m+kw/2);
+console.log('>> m', m, knob[0].offsetLeft);
 						if (!snapType || snapType === 'hard') doSnap('drag', m);
 
 						// color change
@@ -924,9 +927,9 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				//------------------------------------------------------------------------------------------------------------------------------------
 				// start
 
-				var setStartAt = function(e){
-					var num = valueObj[guid];
-					var rlt = updateME(num);
+				const setStartAt = e => {
+					const num = valueObj[guid];
+					const rlt = updateME(num);
 
 					if (customRange) rlt.custom = diff * num / 100 + cstmStart;
 
@@ -944,7 +947,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				};
 
 				// Listen for image loaded
-				var eventMakeReady = $.Event('makeready.'+guid);
+				const eventMakeReady = $.Event('makeready.'+guid);
 				$(el).on('makeready.'+guid, setStartAt);
 			});
 
