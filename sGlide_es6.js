@@ -7,7 +7,7 @@ created:	24.11.2012
 version:	3.0.0
 
 	version history:
-		3.0.0	added 'load' method in favour of 'onload' prop; removed CustomEvent polyfill; all callbacks now receive sGlide context; removed custom element getter to favour querySelectorAll; added resize support; removed orientation-change support; restored 'custom' property to output on ready; rebuilt snapmarks & more accurate snapping; other minor snap improvements & bug fixes; refactoring and general bug fixes; better 'css' & 'extend' functions; removed showKnob to favour noHandle; fixed 'return' on keyboard.shift (11.01.2018)
+		3.0.0	added 'load' method in favour of 'onload' prop; removed CustomEvent polyfill; all callbacks now receive sGlide context; removed custom element getter to favour querySelectorAll; added resize support; removed orientation-change support; restored 'custom' property to output on ready; rebuilt snapmarks & more accurate snapping; other minor snap improvements & bug fixes; refactoring and general bug fixes; better 'css' & 'extend' functions; removed showKnob to favour noHandle; fixed 'return' on keyboard.shift; added Ctrl key option (11.01.2018)
 		2.3.0	add 2 extra snap points to the previous maximum for the ability to snap every 10% at user request (24.04.2017)
 		2.2.0	added snap sensitivity - accepts decimal values between 1 & 3 inclusive
 		2.1.2	bug fix: text inputs were not selectable by mouse-drag in Chrome for jQuery - a proper if statement in the document's mousemove event listener solved it, thereby possibly increasing performance (applied to both jQuery and standalone) (01.02.2015)
@@ -76,6 +76,7 @@ function sGlide(self, options){
 		isMobile		= false,
 		buttons			= false,
 		keyCtrl			= false,
+		keyCtrlCtrl		= false,
 		keyCtrlShift	= false,
 		colorChangeBln	= false;
 		// events
@@ -120,7 +121,7 @@ function sGlide(self, options){
 
 		if (isMobile){
 			document.removeEventListener(mEvt.down, eventDocumentMouseDown);
-		} else if (keyCtrl || keyCtrlShift){
+		} else if (keyCtrl || keyCtrlShift || keyCtrlCtrl){
 			document.removeEventListener('keydown', eventDocumentKeyDown);
 			document.removeEventListener('keyup', eventDocumentKeyUp);
 		}
@@ -350,6 +351,7 @@ function sGlide(self, options){
 
 		colorChangeBln		= (settings.colorShift.length > 1);
 		keyCtrl				= (self.getAttribute('data-keys') === 'true');
+		keyCtrlCtrl			= (self.getAttribute('data-keys') === 'ctrl');
 		keyCtrlShift		= (self.getAttribute('data-keys') === 'shift');
 		buttons				= settings.buttons;
 
@@ -766,8 +768,8 @@ function sGlide(self, options){
 
 		// keyboard controls
 		// if keyboard control enabled or shift additionally required
-		if (!isMobile && (keyCtrl || keyCtrlShift) && !settings.disabled){
-			let keycode, keydown = false, shifted = false,
+		if (!isMobile && (keyCtrl || keyCtrlShift || keyCtrlCtrl) && !settings.disabled){
+			let keycode, keydown = false, shifted = false, ctrled = false,
 				codeBack	= vert ? 40 : 37,
 				codeFwd		= vert ? 38 : 39;
 
@@ -776,13 +778,15 @@ function sGlide(self, options){
 					if (window.event){
 						keycode = window.event.keyCode;
 						shifted = window.event.shiftKey;
+						ctrled	= window.event.ctrlKey;
 					} else if (e){
 						keycode = e.which;
 						shifted = e.shiftKey;
+						ctrled	= e.ctrlKey;
 					}
 
 					// if shift required, then shift must be pressed
-					if (keyCtrlShift && shifted || !keyCtrlShift){
+					if (keyCtrlShift && shifted && !ctrled || keyCtrlCtrl && ctrled && !shifted || !keyCtrlShift && !keyCtrlCtrl){
 						if (keycode === codeBack){
 							eventMinusMouseDown();
 							keydown = true;

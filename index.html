@@ -25,8 +25,8 @@
 <!-- <script type="text/javascript" src="polyfills.js"></script> -->
 <!-- <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script> -->
 <script src="http://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-<script type="text/javascript" src="jquery.sglide_es6.js"></script>
-<!-- <script type="text/javascript" src="sglide_es6.js"></script> -->
+<script type="text/javascript" src="jquery.sglide.js"></script>
+<!-- <script type="text/javascript" src="sglide.js"></script> -->
 <!-- <script type="text/javascript" src="../../~web~/sGlide/jquery.sglide.2.min.js"></script> -->
 <!-- <script type="text/javascript" src="../../~web~/sGlide/sglide.2.1.1.min.js"></script> -->
 
@@ -52,15 +52,15 @@
 				'width': 55,
 				// 'unit': 'px',
 				'image': 'img/knob_.png',
-				'pill': false,
+				// 'pill': false,
 				'snap': {
 					'marks': true,
-					// 'type': 'hard',
+					'type': 'hard',
 					'points': 8
 					// 'sensitivity': 3
 				},
 				'colorShift': ['#3a4d31', '#7bb560'],
-				// 'vertical': true,
+				'vertical': true,
 				'buttons': true,
 				'totalRange': [-58,102],
 				// 'disabled': true,
@@ -100,12 +100,12 @@
 			// 'locked': true,
 			'snap': {
 				'marks': true,
-				// 'type': 'hard',
+				'type': 'hard',
 				'points': 8
 				// 'sensitivity': 3
 			},
 			'colorShift': ['#330', '#cb0'],
-			// 'vertical': true,
+			'vertical': true,
 			'buttons': true,
 			// 'disabled': true,
 			// 'noHandle': true,
@@ -131,7 +131,7 @@
 
 	<div id="container" style="visibility: hidden;">
 		<div id="percent">%</div>
-		<div id="slider1" class="slider_bar" data-keys="shift" style="background-color:#069; border-radius:10px; height:40px"></div><br /><div id="slider2" class="slider_bar_"></div>
+		<div id="slider1" class="slider_bar" data-keys="ctrl" style="background-color:#069; border-radius:10px; height:40px"></div><br /><div id="slider2" class="slider_bar_"></div>
 		<!-- <br><input type="text" value="asdljkas dlkajsd lakjs dlasjd" /> -->
 	</div>
 

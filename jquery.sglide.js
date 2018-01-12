@@ -8,7 +8,7 @@ version:	3.0.0
 test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 	version history:
-		3.0.0	chainable; added jQuery 3 support; added resize support; removed orientation-change support; removed onload callback to favour custom event (ready); restored 'custom' property to output on ready; rebuilt snapmarks & more accurate snapping; other minor snap improvements & bug fixes; refactoring and general bug fixes; removed showKnob to favour noHandle; fixed 'return' on keyboard.shift (11.01.2018)
+		3.0.0	chainable; added jQuery 3 support; added resize support; removed orientation-change support; removed onload callback to favour custom event (ready); restored 'custom' property to output on ready; rebuilt snapmarks & more accurate snapping; other minor snap improvements & bug fixes; refactoring and general bug fixes; removed showKnob to favour noHandle; fixed 'return' on keyboard.shift; added Ctrl key option (11.01.2018)
 		2.3.0	add 2 extra snap points to the previous maximum for the ability to snap every 10% at user request (24.04.2017)
 		2.2.0	added snap sensitivity - accepts decimal values between 0 & 3 inclusive
 		2.1.2	bug fix: text inputs were not selectable by mouse-drag in Chrome for jQuery - a proper if statement in the document's mousemove event listener solved it, thereby possibly increasing performance (applied to both jQuery and standalone) (01.02.2015)
@@ -250,6 +250,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					r_corners		= settings.pill,
 					imageBln		= (settings.image && !settings.noHandle),
 					keyCtrl			= (self.attr('data-keys') === 'true'),
+					keyCtrlCtrl		= (self.attr('data-keys') === 'ctrl'),
 					keyCtrlShift	= (self.attr('data-keys') === 'shift'),
 					colorChangeBln	= (settings.colorShift.length > 1),
 					isMobile		= helpers[guid+'-isMobile'],
@@ -680,8 +681,8 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				};
 
 				// if keyboard control enabled or shift additionally required
-				if (!isMobile && (keyCtrl || keyCtrlShift) && !settings.disabled){
-					var keycode, keydown = false, shifted = false,
+				if (!isMobile && (keyCtrl || keyCtrlShift || keyCtrlCtrl) && !settings.disabled){
+					var keycode, keydown = false, shifted = false, ctrled = false,
 						codeBack	= vert ? 40 : 37,
 						codeFwd		= vert ? 38 : 39;
 
@@ -690,13 +691,15 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 							if (window.event){
 								keycode = window.event.keyCode;
 								shifted = window.event.shiftKey;
+								ctrled	= window.event.ctrlKey;
 							} else if (e){
 								keycode = e.which;
 								shifted = e.shiftKey;
+								ctrled	= e.ctrlKey;
 							}
 
 							// if shift required, then shift must be pressed
-							if (keyCtrlShift && shifted || !keyCtrlShift){
+							if (keyCtrlShift && shifted && !ctrled || keyCtrlCtrl && ctrled && !shifted || !keyCtrlShift && !keyCtrlCtrl){
 								if (keycode === codeBack){
 									eventPlusMinusMouseDown('<');
 									keydown = true;

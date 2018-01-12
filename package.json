@@ -1,8 +1,8 @@
 {
   "name": "sglide",
-  "version": "2.2.0",
-  "description": "sGlide is a super flexible and light-weight jQuery- or standalone plugin that generates a simple, yet feature-rich & mobile-ready slider.",
-  "main": "jquery.sglide.js",
+  "version": "3.0.0",
+  "description": "sGlide: a smart, lightweight and flexible slider, that's fully featured and mobile-ready. Standalone or jQuery.",
+  "main": "jquery.sglide.3.0.0.min.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,6 +12,7 @@
   },
   "keywords": [
     "jquery-plugin",
+    "responsive",
     "slider",
     "loadbar",
     "gauge",
