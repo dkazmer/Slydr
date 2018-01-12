@@ -1,14 +1,14 @@
 sGlide
 ======
 
-sGlide is a jQuery- or standalone plugin that generates a simple, light-weight, feature-rich and mobile-ready slider, which can be easily customized and styled using regular CSS. Visit http://webshifted.com/sGlide/
+A smart, lightweight and flexible slider, that's fully featured, responsive and mobile-ready. Standalone or jQuery. It can be easily customized and styled using regular CSS.
+
+For details, visit http://webshifted.com/sGlide/
 
 Quickstart Guide: apply the following to an empty DIV with a unique id.
 
-	// jQuery:
-	// $('#slider').sGlide({
-	// jQuery independent:
-	var my_sGlide_instance = new sGlide(my_element, {
+	var callback = o => {};
+	var options = {
 		startAt: 60,
 		width: 600,
 		height: 20,
@@ -17,7 +17,10 @@ Quickstart Guide: apply the following to an empty DIV with a unique id.
 			points: 5,
 			marks: true
 		},
-		drop: function(o){
-			// 'o' Object returned
-		}
-	});
+		drop: callback
+	};
+
+	// Standalone
+	var sGlide_instance = new sGlide(el, options);
+	// or jQuery
+	$('div#slider').sGlide(options);
