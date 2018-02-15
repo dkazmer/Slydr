@@ -2,7 +2,7 @@
 
 A smart, lightweight and flexible slider, that's fully featured, responsive and mobile-ready. Standalone or jQuery. It can be easily customized and styled using regular CSS.
 
-For details, visit http://webshifted.com/sGlide/
+For details, visit [home page](http://webshifted.com/sGlide/).
 
 Quickstart Guide: apply the following to an empty `div` with a unique id.
 
@@ -16,7 +16,8 @@ let options = {
 		points: 5,
 		marks: true
 	},
-	drop: callback
+	drop: callback,
+	onSnap: callback
 };
 
 // Standalone

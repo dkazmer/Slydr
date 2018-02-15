@@ -2,12 +2,13 @@
 
 /***********************************************************************************
 
-author:		Daniel Kazmer - http://webshifted.com
+author:		Daniel B. Kazmer (webshifted.com)
 created:	24.11.2012
-version:	3.0.0
+version:	3.1.0
 test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 	version history:
+		3.1.0	retina setting default set to false (15.02.2018)
 		3.0.0	chainable; added jQuery 3 support; added resize support; removed orientation-change support; removed onload callback to favour custom event (ready); restored 'custom' property to output on ready; rebuilt snapmarks & more accurate snapping; other minor snap improvements & bug fixes; refactoring and general bug fixes; removed showKnob to favour noHandle; fixed 'return' on keyboard.shift; added Ctrl key option (11.01.2018)
 		2.3.0	add 2 extra snap points to the previous maximum for the ability to snap every 10% at user request (24.04.2017)
 		2.2.0	added snap sensitivity - accepts decimal values between 0 & 3 inclusive
@@ -195,13 +196,13 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 						'points'	: 0,
 						'sensitivity': 2
 					},
-					'disabled'		: false,
 					'colorShift'	: [],
+					'disabled'		: false,
 					'vertical'		: false,
 					'noHandle'		: false,
 					'buttons'		: false,
-					'totalRange'	: [0,0],
-					'retina'		: true
+					'retina'		: false,
+					'totalRange'	: [0,0]
 				}, options);
 
 				self.removeAttr('style');	// remove user inline styles
