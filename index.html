@@ -19,7 +19,7 @@
 /*#slider1 {margin-left: 60px !important;}*/
 /*.slider_knob {background-color: #ccc !important;}*/
 .follow_bar {background-color: #363;}
-#slider1_vert-marks {margin-left: 60px !important;}
+/*#slider1_vert-marks {margin-left: 60px !important;}*/
 </style>
 
 <!-- <script type="text/javascript" src="polyfills.js"></script> -->
@@ -40,39 +40,40 @@
 			// $pct.text(Math.round(o.percent)+'%');
 			// document.getElementById('percent').innerHTML = o.id+': '+Math.round(o.value) + '%';
 		};
+		var options = {
+			'startAt': 65,
+			'height': 20,
+			'width': 385,
+			// 'unit': 'px',
+			'image': 'img/knob_.png',
+			// 'pill': false,
+			'snap': {
+				'marks': true,
+				// 'type': 'hard',
+				// 'sensitivity': 3,
+				'points': 6
+			},
+			'colorShift': ['#3a4d31', '#7bb560'],
+			'vertical': true,
+			'buttons': true,
+			'totalRange': [-58,102],
+			// 'disabled': true,
+			// 'noHandle': true,
+			'drop': cb,
+			'onSnap': cb,
+			'onButton': cb
+		};
 
 		/*sglideArr = [];
 		// var nodes = document.querySelectorAll('.slider_bar');
 		var nodes = document.getElementsByClassName('slider_bar');
 
 		for (const el of nodes){
-			sglideArr.push(new sGlide(el, {
-				'startAt': 65,
-				'height': 20,
-				'width': 55,
-				// 'unit': 'px',
-				'image': 'img/knob_.png',
-				// 'pill': false,
-				'snap': {
-					'marks': true,
-					'type': 'hard',
-					'points': 8
-					// 'sensitivity': 3
-				},
-				'colorShift': ['#3a4d31', '#7bb560'],
-				'vertical': true,
-				'buttons': true,
-				'totalRange': [-58,102],
-				// 'disabled': true,
-				// 'noHandle': true,
-				'drop': cb,
-				'onSnap': cb,
-				'onButton': cb
-			}).load(function(data){	// can't use arrow function as it loses context
-				console.log('>> load!', data, this);
+			sglideArr.push(new sGlide(el, options).load(function(data){	// can't use arrow function as it loses context
+				// console.log('>> load!', data, this);
 				// this.startAt(15);
 				// this.destroy();
-				data.percent = 15;
+				// data.percent = 15;
 				cb(data);
 				document.getElementById('container').style.visibility = 'visible';
 			}));
@@ -89,30 +90,7 @@
 		console.log('sGlideArr',sglideArr);*/
 
 		var $pct = $('#percent');
-		$('.slider_bar').sGlide({
-			'startAt': 66.66,
-			'width': 55,
-			'height': 22,
-			// 'unit': 'px',
-			'image': 'img/knob_.png',
-			// 'pill': false,
-			'totalRange': [-58,102],
-			// 'locked': true,
-			'snap': {
-				'marks': true,
-				'type': 'hard',
-				'points': 8
-				// 'sensitivity': 3
-			},
-			'colorShift': ['#330', '#cb0'],
-			'vertical': true,
-			'buttons': true,
-			// 'disabled': true,
-			// 'noHandle': true,
-			'drop': cb,
-			'onSnap': cb,
-			'onButton': cb
-		})//;
+		$('.slider_bar').sGlide(options)//;
 		//$('.slider_bar')
 		// .on('sGlide.ready', (e, data) => console.log('>> ready', data));
 		.on('sGlide.ready', function(e, data){

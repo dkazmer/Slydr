@@ -4,9 +4,10 @@
 
 author:		Daniel B. Kazmer (webshifted.com)
 created:	24.11.2012
-version:	3.1.0
+version:	3.1.1
 
 	version history:
+		3.1.1	improved vertical positioning and alignments; unit default set to null ()
 		3.1.0	retina setting default set to false (15.02.2018)
 		3.0.0	added 'load' method in favour of 'onload' prop; removed CustomEvent polyfill; all callbacks now receive sGlide context; removed custom element getter to favour querySelectorAll; added resize support; removed orientation-change support; restored 'custom' property to output on ready; rebuilt snapmarks & more accurate snapping; other minor snap improvements & bug fixes; refactoring and general bug fixes; better 'css' & 'extend' functions; removed showKnob to favour noHandle; fixed 'return' on keyboard.shift; added Ctrl key option (11.01.2018)
 		2.3.0	add 2 extra snap points to the previous maximum for the ability to snap every 10% at user request (24.04.2017)
@@ -189,7 +190,6 @@ function sGlide(self, options){
 
 	var callback = null;
 	var notifier = function(fn){ callback = fn; };
-	self.addEventListener('sGlide.ready', function(data){ if (callback) callback.call(that, data.detail); });
 	this.load = notifier;
 
 	//------------------------------------------------------------------------------------------------------------------------------------
@@ -296,7 +296,7 @@ function sGlide(self, options){
 			'image'			: '',	// full path of image
 			'height'		: 40,
 			'width'			: 100,
-			'unit'			: '%',	// 'px' or '%'
+			'unit'			: null,	// 'px' or '%'
 			'pill'			: true,
 			'snap'			: {
 				'marks'		: false,
@@ -450,10 +450,11 @@ function sGlide(self, options){
 		// styles
 
 		// validate some user settings
-		var unit = settings.unit, width = settings.width;
-		if (unit != 'px' && unit != '%') unit = '%';
-		else if (unit == 'px') width = Math.round(width);
-		else if (unit == '%' && Math.round(width) > 100) width = 100;
+		var width = settings.width;
+		var unit = (!settings.unit && !vert) ? '%' : 'px';
+
+		if (unit === 'px') width = Math.round(width);
+		else if (unit === '%' && Math.round(width) > 100) width = 100;
 
 		var cssPrefixes		= ['-webkit-', '-khtml-', '-moz-', '-ms-', '-o-', ''],
 			cssBorderBox	= {'box-sizing': 'border-box'},
@@ -501,7 +502,7 @@ function sGlide(self, options){
 		var snapping_on = false;
 		var snapPctValues = [0];
 
-		var setSnapValues = function(resize){
+		var setSnapValues = function(){
 			var kw = knob.offsetWidth;
 			if (snaps === 1) snaps = 2;
 
@@ -556,20 +557,25 @@ function sGlide(self, options){
 
 		// vertical
 		var verticalTransform = function(){
-			var vertWidth = Math.round(self.offsetWidth);
+			var vertWidth = Math.round(self.offsetWidth / 2);
+			var vertHeight = Math.round(self.offsetHeight / 2);
+
+			cssRotate.transform += ' translate(-'+Math.abs(vertWidth - vertHeight)+'px, 0)';
+
 			if (markers && is_snap){
 				var a = [self, $('#'+guid+'_markers')[0]];
 
 				wrapAll(a, '<div id="'+guid+'_vert-marks" style="margin:0; z-index:997; width:'+width+unit+
-					'; -webkit-backface-visibility:hidden; -moz-backface-visibility:hidden; -ms-backface-visibility:hidden; backface-visibility:hidden"></div>');
+					'; -webkit-backface-visibility:hidden; -moz-backface-visibility:hidden; -ms-backface-visibility:hidden; backface-visibility:hidden; display:inline-block"></div>');
 
 				vmarks = $('#'+guid+'_vert-marks')[0];
 
-				css(self, {'width': '100%'});
+				css(self, {'width': '100%'});	// need this
+				css(self, {'width': self.offsetWidth+'px'});	// need this too
 				css(vmarks, clone(cssContentBox), cssPrefixes);
 				css(vmarks, clone(cssRotate), cssPrefixes);
 				css(vmarks, {'filter': 'progid:DXImageTransform.Microsoft.BasicImage(rotation=3)'});
-				css(vmarks, {'transform-origin': vertWidth+'px 0'}, cssPrefixes);
+				css(vmarks, {'transform-origin': vertWidth+'px '+vertHeight+'px'}, cssPrefixes);
 
 				// for (var i = 0; i < a.length; i++)
 				// 	css(a[i], {'margin': '0'});
@@ -579,7 +585,7 @@ function sGlide(self, options){
 				css(self, {'backface-visibility': 'hidden'}, cssPrefixes);
 				css(self, clone(cssRotate), cssPrefixes);
 				css(self, {'filter': 'progid:DXImageTransform.Microsoft.BasicImage(rotation=3)'});
-				css(self, {'transform-origin': vertWidth+'px 0'}, cssPrefixes);
+				css(self, {'transform-origin': vertWidth+'px '+vertHeight+'px'}, cssPrefixes);
 			}
 			self.classList.add('vertical');
 		};
@@ -592,7 +598,7 @@ function sGlide(self, options){
 		var drawButtons = function(){
 			knob_adjust = knob.offsetWidth / self.offsetWidth * 50;
 
-			var vertStyles	= '; z-index:1000; position:relative; top:30px',
+			var vertStyles	= '; z-index:1000; position:absolute',
 				plusStr		= '<div class="sglide-buttons" id="'+guid+'_plus" style="display:inline-block; cursor:pointer'+(vert ? vertStyles : '')+'">&nbsp;+&nbsp;</div>',
 				minusStr	= '<div class="sglide-buttons" id="'+guid+'_minus" style="display:inline-block; cursor:pointer'+(vert ? vertStyles : '')+'">&nbsp;&minus;&nbsp;</div>';
 
@@ -920,17 +926,19 @@ function sGlide(self, options){
 		};
 
 		eventWindowResize = function(){
-			var val = null;
-			var kw	= knob.offsetWidth;
-			var selfWidth = self.offsetWidth;
-			that.startAt(THE_VALUE);
+			if (!vert){
+				var val = null;
+				var kw	= knob.offsetWidth;
+				var selfWidth = self.offsetWidth;
+				that.startAt(THE_VALUE);
 
-			if (marks){
-				marks.style.width = selfWidth+'px';
-				var divArray = Array.prototype.slice.call(marks.children);
-				for (var i = divArray.length - 1; i >= 0; i--){
-					val = (selfWidth - kw) / (snaps-1) * i + (kw/2);
-					divArray[i].style.left = val+'px';
+				if (marks){
+					marks.style.width = selfWidth+'px';
+					var divArray = Array.prototype.slice.call(marks.children);
+					for (var i = divArray.length - 1; i >= 0; i--){
+						val = (selfWidth - kw) / (snaps-1) * i + (kw/2);
+						divArray[i].style.left = val+'px';
+					}
 				}
 			}
 		};
@@ -1037,6 +1045,8 @@ function sGlide(self, options){
 		// start
 
 		var setStartAt = function(e){
+			self.removeEventListener('makeready.'+guid, setStartAt);
+
 			var num = THE_VALUE;
 			var rlt = updateME(num);
 
@@ -1051,11 +1061,8 @@ function sGlide(self, options){
 
 			that.startAt(num);
 
-			self.removeEventListener('makeready.'+guid, setStartAt);
-
-			var ready = new CustomEvent('sGlide.ready', {'detail': rlt});
-			self.dispatchEvent(ready);
-			self.removeEventListener('sGlide.ready', null);
+			// on ready
+			if (callback) callback.call(that, rlt);
 		};
 
 		// Listen for image loaded

@@ -8,6 +8,7 @@ version:	3.1.0
 test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 	version history:
+		3.1.1	improved vertical positioning and alignments; unit default set to null; added css class to snap markers container ()
 		3.1.0	retina setting default set to false (15.02.2018)
 		3.0.0	chainable; added jQuery 3 support; added resize support; removed orientation-change support; removed onload callback to favour custom event (ready); restored 'custom' property to output on ready; rebuilt snapmarks & more accurate snapping; other minor snap improvements & bug fixes; refactoring and general bug fixes; removed showKnob to favour noHandle; fixed 'return' on keyboard.shift; added Ctrl key option (11.01.2018)
 		2.3.0	add 2 extra snap points to the previous maximum for the ability to snap every 10% at user request (24.04.2017)
@@ -188,7 +189,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					'image'			: '',	// full path of image
 					'height'		: 40,
 					'width'			: 100,
-					'unit'			: '%',	// 'px' or '%'
+					'unit'			: null,	// 'px' or '%'
 					'pill'			: true,
 					'snap'			: {
 						'marks'		: false,
@@ -352,10 +353,11 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				// styles
 
 				// validate some user settings
-				const unit = settings.unit; var width = settings.width;
-				if (unit != 'px' && unit != '%') unit = '%';
-				else if (unit == 'px') width = Math.round(width);
-				else if (unit == '%' && Math.round(width) > 100) width = 100;
+				var width = settings.width;
+				const unit = (!settings.unit && !vert) ? '%' : 'px';
+
+				if (unit === 'px') width = Math.round(width);
+				else if (unit === '%' && Math.round(width) > 100) width = 100;
 
 				self.css({
 					'width': width + unit,
@@ -368,10 +370,13 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					'-webkit-touch-callout': 'none'
 				});
 
-				var self_width = self.width();
-				const self_width_round = Math.round(self_width); 	// float value will blur vertical
+				var self_width			= Math.round(self.width());
+				var self_width_round	= Math.round(self_width / 2); 	// float value will blur vertical
+				var self_height			= Math.round(self.height());
+				var self_height_round	= Math.round(self_height / 2); 	// float value will blur vertical
+				var translate			= ' translate(-'+Math.abs(self_width_round - self_height_round)+'px, 0)';
 
-				const cssContentBox = {
+				var cssContentBox = {
 					'-webkit-box-sizing': 'content-box',
 					'-khtml-box-sizing': 'content-box',
 					'-moz-box-sizing': 'content-box',
@@ -384,16 +389,16 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					'-ms-user-select': 'none',
 					'user-select': 'none'
 				}, cssRotate = {
-					'-webkit-transform': 'rotate(-90deg)',
-					'-khtml-transform': 'rotate(-90deg)',
-					'-moz-transform': 'rotate(-90deg)',
-					'-ms-transform': 'rotate(-90deg)',
-					'transform': 'rotate(-90deg)',
-					'-webkit-transform-origin': self_width_round+'px 0',
-					'-khtml-transform-origin': self_width_round+'px 0',
-					'-moz-transform-origin': self_width_round+'px 0',
-					'-ms-transform-origin': self_width_round+'px 0',
-					'transform-origin': self_width_round+'px 0',
+					'-webkit-transform': 'rotate(-90deg)'+translate,
+					'-khtml-transform': 'rotate(-90deg)'+translate,
+					'-moz-transform': 'rotate(-90deg)'+translate,
+					'-ms-transform': 'rotate(-90deg)'+translate,
+					'transform': 'rotate(-90deg)'+translate,
+					'-webkit-transform-origin': self_width_round+'px '+self_height_round+'px',
+					'-khtml-transform-origin': self_width_round+'px '+self_height_round+'px',
+					'-moz-transform-origin': self_width_round+'px '+self_height_round+'px',
+					'-ms-transform-origin': self_width_round+'px '+self_height_round+'px',
+					'transform-origin': self_width_round+'px '+self_height_round+'px',
 					'filter': 'progid:DXImageTransform.Microsoft.BasicImage(rotation=3)'
 				};
 
@@ -446,7 +451,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				};
 
 				const drawSnapmarks = kw => {
-					self.after('<div id="'+guid+'_markers"></div>');
+					self.after('<div id="'+guid+'_markers" class="sglide-markers"></div>');
 					marks = $('#'+guid+'_markers');
 					marks.css({
 						'position': 'relative',
@@ -485,11 +490,12 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 						const a = $('#'+guid+', #'+guid+'_markers');
 
 						a.wrapAll('<div id="'+guid+'_vert-marks" style="margin:0; z-index:997; width:'+width+unit+
-							'; -webkit-backface-visibility:hidden; -moz-backface-visibility:hidden; -ms-backface-visibility:hidden; backface-visibility:hidden"></div>');
+							'; -webkit-backface-visibility:hidden; -moz-backface-visibility:hidden; -ms-backface-visibility:hidden; backface-visibility:hidden; display:inline-block"></div>');
 
 						const vmarks = $('#'+guid+'_vert-marks');
 
-						self.css('width', '100%');
+						self.css('width', '100%');	// need this
+						self.css('width', self.width());	// need this too
 						vmarks.css(cssContentBox).css(cssRotate);
 
 						a.each((i, el) => $(el).css('margin', '0'));
