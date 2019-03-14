@@ -7,6 +7,7 @@ created:	24.11.2012
 version:	3.1.0
 
 	version history:
+		3.2.0	added preSnap - checks whether hard or soft snap is enabled, presnapping to nearest snap point on ready; start snap points at 2 (20.02.2019)
 		3.1.0	retina setting default set to false (15.02.2018)
 		3.0.0	added 'load' method in favour of 'onload' prop; removed CustomEvent polyfill; all callbacks now receive sGlide context; removed custom element getter to favour querySelectorAll; added resize support; removed orientation-change support; restored 'custom' property to output on ready; rebuilt snapmarks & more accurate snapping; other minor snap improvements & bug fixes; refactoring and general bug fixes; better 'css' & 'extend' functions; removed showKnob to favour noHandle; fixed 'return' on keyboard.shift; added Ctrl key option (11.01.2018)
 		2.3.0	add 2 extra snap points to the previous maximum for the ability to snap every 10% at user request (24.04.2017)
@@ -335,20 +336,21 @@ function sGlide(self, options){
 		THE_VALUE			= settings.startAt;
 		
 		let result			= 0,
-			vert			= settings.vertical,
-			is_snap			= (settings.snap.points > 0 && settings.snap.points <= 11),
-			markers			= (is_snap && settings.snap.marks),
-			snapType		= (settings.snap.type != 'hard' && settings.snap.type != 'soft') ? false : settings.snap.type,
 			knob_bg			= '#333',
 			knob_width		= (settings.noHandle ? '0' : '2%'),
 			self_height		= Math.round(settings.height)+'px',
 			knob_height		= 'inherit',
+			MSoffsetTop		= null,
+			vmarks			= null;
+
+		const vert			= settings.vertical,
+			is_snap			= (settings.snap.points > 1 && settings.snap.points <= 11),
+			markers			= (is_snap && settings.snap.marks),
+			snapType		= (settings.snap.type != 'hard' && settings.snap.type != 'soft') ? false : settings.snap.type,
 			r_corners		= settings.pill,
 			imageBln		= (settings.image && !settings.noHandle),
 			retina			= (window.devicePixelRatio > 1) && settings.retina,
-			customRange		= (settings.totalRange[0] !== 0 || settings.totalRange[1] !== 0) && settings.totalRange[0] < settings.totalRange[1],
-			MSoffsetTop		= null,
-			vmarks			= null;
+			customRange		= (settings.totalRange[0] !== 0 || settings.totalRange[1] !== 0) && settings.totalRange[0] < settings.totalRange[1];
 
 		colorChangeBln		= (settings.colorShift.length > 1);
 		keyCtrl				= (self.getAttribute('data-keys') === 'true');
@@ -364,13 +366,8 @@ function sGlide(self, options){
 
 			// retina handling
 			if (retina){
-				let rpathTemp = path.split('.');
-
-				rpathTemp[rpathTemp.length-2] = rpathTemp[rpathTemp.length-2] + '@2x';
-				path = '';
-				for (let i = 0; i < rpathTemp.length; i++){
-					path += rpathTemp[i] + ((i < rpathTemp.length-1) ? '.' : '');
-				}
+				const ix = path.lastIndexOf('.');
+				path = path.slice(0, ix) + '@2x' + path.slice(ix);
 			}
 
 			let img = new Image();
@@ -490,15 +487,19 @@ function sGlide(self, options){
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// snap marks, buttons, vertical
 
+		const preSnap = () => {
+			doSnap((snapType !== 'soft' ? 'drag' : 'hard'), knob.offsetLeft);
+			THE_VALUE = getPercent(knob.offsetLeft);
+		};
+
 		// snap to
+		const snaps = Math.round(settings.snap.points);
 		let marks = null;
-		let snaps = Math.round(settings.snap.points);
 		let snapping_on = false;
 		let snapPctValues = [0];
 
 		const setSnapValues = () => {
 			var kw = knob.offsetWidth;
-			if (snaps === 1) snaps = 2;
 
 			// percentage
 			var increment = 100 / (snaps - 1);
@@ -515,7 +516,7 @@ function sGlide(self, options){
 
 		const drawSnapmarks = kw => {
 			var selfWidth = self.offsetWidth;
-			self.insertAdjacentHTML('afterend', '<div id="'+guid+'_markers"></div>');
+			self.insertAdjacentHTML('afterend', '<div id="'+guid+'_markers" class="sglide-markers"></div>');
 			marks = $('#'+guid+'_markers')[0];
 			css(marks, {
 				'position': 'relative',
@@ -1020,7 +1021,7 @@ function sGlide(self, options){
 
 		const setStartAt = e => {
 			const num = THE_VALUE;
-			const rlt = updateME(num);
+			var rlt = updateME(num);
 
 			if (customRange) rlt.custom = diff * num / 100 + cstmStart;
 
@@ -1032,6 +1033,12 @@ function sGlide(self, options){
 			// if (options.onload)				options.onload(rlt);
 
 			that.startAt(num);
+
+			// pre snap
+			if (snapType === 'hard' || snapType === 'soft') {
+				preSnap();
+				rlt = updateME(THE_VALUE);
+			}
 
 			self.removeEventListener('makeready.'+guid, setStartAt);
 

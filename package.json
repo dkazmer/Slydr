@@ -30,8 +30,8 @@
   "bugs": {
     "url": "https://github.com/dkazmer/sGlide/issues"
   },
-  "homepage": "http://webshifted.com/sGlide",
+  "homepage": "https://webshifted.com/sGlide",
   "dependencies": {
-    "jquery": ">=1.7"
+    "jquery": ">=3"
   }
 }

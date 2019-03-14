@@ -8,6 +8,7 @@ version:	3.1.0
 test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 	version history:
+		3.2.0	added preSnap - checks whether hard or soft snap is enabled, presnapping to nearest snap point on ready; start snap points at 2 (20.02.2019)
 		3.1.1	improved vertical positioning and alignments; unit default set to null; added css class to snap markers container ()
 		3.1.0	retina setting default set to false (15.02.2018)
 		3.0.0	chainable; added jQuery 3 support; added resize support; removed orientation-change support; removed onload callback to favour custom event (ready); restored 'custom' property to output on ready; rebuilt snapmarks & more accurate snapping; other minor snap improvements & bug fixes; refactoring and general bug fixes; removed showKnob to favour noHandle; fixed 'return' on keyboard.shift; added Ctrl key option (11.01.2018)
@@ -241,20 +242,21 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				// variables
 				var THE_VALUE		= valueObj[guid] = settings.startAt,
 					result			= 0,
-					vert			= settings.vertical,
-					is_snap			= (settings.snap.points > 0 && settings.snap.points <= 11),
-					markers			= (is_snap && settings.snap.marks),
-					snapType		= (settings.snap.type != 'hard' && settings.snap.type != 'soft') ? false : settings.snap.type,
 					knob_bg			= '#333',
 					knob_width		= (settings.noHandle ? '0' : '2%'),
 					knob_height		= 'inherit',
-					self_height		= Math.round(settings.height)+'px',
+					self_height		= Math.round(settings.height)+'px';
+				
+				const vert			= settings.vertical,
+					is_snap			= (settings.snap.points > 1 && settings.snap.points <= 11),
+					markers			= (is_snap && settings.snap.marks),
+					snapType		= (settings.snap.type != 'hard' && settings.snap.type != 'soft') ? false : settings.snap.type,
 					r_corners		= settings.pill,
 					imageBln		= (settings.image && !settings.noHandle),
 					keyCtrl			= (self.attr('data-keys') === 'true'),
 					keyCtrlCtrl		= (self.attr('data-keys') === 'ctrl'),
 					keyCtrlShift	= (self.attr('data-keys') === 'shift'),
-					colorChangeBln	= (settings.colorShift.length > 1),
+					colorChangeBln	= (settings.colorShift.length === 2),
 					isMobile		= helpers[guid+'-isMobile'],
 					customRange		= (settings.totalRange[0] !== 0 || settings.totalRange[1] !== 0) && settings.totalRange[0] < settings.totalRange[1],
 					retina			= (window.devicePixelRatio > 1) && settings.retina;
@@ -270,14 +272,8 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 					// retina handling
 					if (retina){
-						var rImgTemp = path.split('.');
-						var rImgTemp_length = rImgTemp.length;
-
-						rImgTemp[rImgTemp_length-2] = rImgTemp[rImgTemp_length-2] + '@2x';
-						path = '';
-						for (var i = 0; i < rImgTemp_length; i++){
-							path += rImgTemp[i] + ((i < rImgTemp_length-1) ? '.' : '');
-						}
+						const ix = path.lastIndexOf('.');
+						path = path.slice(0, ix) + '@2x' + path.slice(ix);
 					}
 
 					$(new Image()).attr('src', path).appendTo(knob).on('load', function(){
@@ -369,10 +365,11 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					'position': 'relative',
 					'-webkit-touch-callout': 'none'
 				});
+				
+				self_height			= Math.round(self.height());
 
 				var self_width			= Math.round(self.width());
 				var self_width_round	= Math.round(self_width / 2); 	// float value will blur vertical
-				var self_height			= Math.round(self.height());
 				var self_height_round	= Math.round(self_height / 2); 	// float value will blur vertical
 				var translate			= ' translate(-'+Math.abs(self_width_round - self_height_round)+'px, 0)';
 
@@ -425,6 +422,11 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 				//------------------------------------------------------------------------------------------------------------------------------------
 				// snap marks, buttons, vertical
 
+				const preSnap = () => {
+					doSnap((snapType !== 'soft' ? 'drag' : 'hard'), knob[0].offsetLeft);
+					valueObj[guid] = THE_VALUE = getPercent(knob[0].offsetLeft);
+				};
+
 				// snap to
 				var marks = null;
 				const snaps = Math.round(settings.snap.points);
@@ -434,7 +436,6 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 				const setSnapValues = () => {
 					const kw = knob.width();
-					if (snaps === 1) snaps = 2;
 
 					// percentage
 					const increment = 100 / (snaps - 1);
@@ -939,7 +940,7 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 
 				const setStartAt = e => {
 					const num = valueObj[guid];
-					const rlt = updateME(num);
+					var rlt = updateME(num);
 
 					if (customRange) rlt.custom = diff * num / 100 + cstmStart;
 
@@ -951,6 +952,12 @@ test:		http://jsbin.com/xarejaqeci/edit?html,js,output
 					// if (options.onload)				options.onload(rlt);
 
 					self.sGlide('startAt', num);
+
+					// pre snap
+					if (snapType === 'hard' || snapType === 'soft') {
+						preSnap();
+						rlt = updateME(valueObj[guid]);
+					}
 
 					$(el).off('makeready.'+guid, setStartAt);
 					$(el).trigger('sGlide.ready', [rlt]);

@@ -24,18 +24,20 @@
 
 <!-- <script type="text/javascript" src="polyfills.js"></script> -->
 <!-- <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script> -->
-<script src="http://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-<script type="text/javascript" src="jquery.sglide.js"></script>
-<!-- <script type="text/javascript" src="sglide.js"></script> -->
+<!-- <script src="http://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="jquery.sglide_es6.js"></script> -->
+<script type="text/javascript" src="sglide_es6.js"></script>
 <!-- <script type="text/javascript" src="../../~web~/sGlide/jquery.sglide.2.min.js"></script> -->
 <!-- <script type="text/javascript" src="../../~web~/sGlide/sglide.2.1.1.min.js"></script> -->
 
 <script type="text/javascript">
+	const jQ = 0;
+
 	function run(){
 		var pct = document.getElementById('percent');
 		var cb = function(o){
-			// console.log('>> o', o);
-			console.log('> context',this);
+			// console.log('>> o', o.custom);
+			// console.log('> context',this);
 			pct.innerHTML = o.id+': '+Math.round(o.percent) + '%';
 			// $pct.text(Math.round(o.percent)+'%');
 			// document.getElementById('percent').innerHTML = o.id+': '+Math.round(o.value) + '%';
@@ -43,41 +45,59 @@
 		var options = {
 			'startAt': 65,
 			'height': 20,
-			'width': 385,
-			// 'unit': 'px',
+			'width': 600,
+			'unit': 'px',
 			'image': 'img/knob_.png',
 			// 'pill': false,
 			'snap': {
 				'marks': true,
-				// 'type': 'hard',
+				'type': 'hard',
 				// 'sensitivity': 3,
-				'points': 6
+				'points': 2
 			},
-			'colorShift': ['#3a4d31', '#7bb560'],
+			'colorShift': (!jQ ? ['#3a4d31', '#7bb560'] : ['#630', '#fc0']),
 			'vertical': true,
 			'buttons': true,
 			'totalRange': [-58,102],
 			// 'disabled': true,
 			// 'noHandle': true,
+			'retina': true,
 			'drop': cb,
 			'onSnap': cb,
 			'onButton': cb
 		};
 
-		/*sglideArr = [];
-		// var nodes = document.querySelectorAll('.slider_bar');
-		var nodes = document.getElementsByClassName('slider_bar');
+		// LAUNCH IT
 
-		for (const el of nodes){
-			sglideArr.push(new sGlide(el, options).load(function(data){	// can't use arrow function as it loses context
-				// console.log('>> load!', data, this);
-				// this.startAt(15);
-				// this.destroy();
-				// data.percent = 15;
+		if (jQ){
+			const $pct = $('#percent');
+			$('.slider_bar')//;
+			//$('.slider_bar')
+			// .on('sGlide.ready', (e, data) => console.log('>> ready', data));
+			.on('sGlide.ready', function(e, data){
+				console.log('>> ready JQ', this, data);
+				// $(this).sGlide('startAt', 66.66);
+				$('#container').css('visibility', 'visible');
 				cb(data);
-				document.getElementById('container').style.visibility = 'visible';
-			}));
-		}*/
+			}).sGlide(options);
+		} else {
+			sglideArr = [];
+			// var nodes = document.querySelectorAll('.slider_bar');
+			var nodes = document.getElementsByClassName('slider_bar');
+
+			for (const el of nodes){
+				sglideArr.push(new sGlide(el, options).load(function(data){	// can't use arrow function as it loses context
+					console.log('>> load JS', data, this);
+					// this.startAt(15);
+					// this.destroy();
+					// data.percent = 15;
+					cb(data);
+					document.getElementById('container').style.visibility = 'visible';
+				}));
+				options.startAt = 35;
+			}
+		}
+
 
 		/*for (const glide of sglideArr){
 			glide.load(function(data){	// can't use arrow function as it loses context
@@ -89,16 +109,6 @@
 		}
 		console.log('sGlideArr',sglideArr);*/
 
-		var $pct = $('#percent');
-		$('.slider_bar').sGlide(options)//;
-		//$('.slider_bar')
-		// .on('sGlide.ready', (e, data) => console.log('>> ready', data));
-		.on('sGlide.ready', function(e, data){
-			console.log('>> ready', this);
-			// $(this).sGlide('startAt', 66.66);
-			$('#container').css('visibility', 'visible');
-		});
-
 		// setTimeout(function(){
 		// 	$('.slider_bar').sGlide('destroy');
 		// }, 0);
@@ -109,7 +119,7 @@
 
 	<div id="container" style="visibility: hidden;">
 		<div id="percent">%</div>
-		<div id="slider1" class="slider_bar" data-keys="ctrl" style="background-color:#069; border-radius:10px; height:40px"></div><br /><div id="slider2" class="slider_bar_"></div>
+		<div id="slider1" class="slider_bar" data-keys="ctrl" style="background-color:#069; border-radius:10px; height:40px"></div><br /><br /><br /><div id="slider2" class="slider_bar_"></div>
 		<!-- <br><input type="text" value="asdljkas dlkajsd lakjs dlasjd" /> -->
 	</div>
 

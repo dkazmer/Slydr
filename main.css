@@ -23,7 +23,7 @@ body {
 /*#slider1 { box-shadow: inset 8px 4px 16px #333; border-bottom: #eee solid 1px; }*/
 #slider2 { background-color: darkgray; }
 
-#slider1_markers div {
+.sglide-markers div {
 	border-left: #999 solid 1px !important;
 	top: 7px !important;
 	/*float: left;*/

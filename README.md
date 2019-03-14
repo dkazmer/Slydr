@@ -2,12 +2,13 @@
 
 A smart, lightweight and flexible slider, that's fully featured, responsive and mobile-ready. Standalone or jQuery. It can be easily customized and styled using regular CSS.
 
-For details, visit [home page](http://webshifted.com/sGlide/).
+For details, visit [home page](https://webshifted.com/sGlide/).
 
 Quickstart Guide: apply the following to an empty `div` with a unique id.
 
 ```js
-let callback = o => {};
+const callback = o => {};
+
 let options = {
 	startAt: 60,
 	width: 85,
