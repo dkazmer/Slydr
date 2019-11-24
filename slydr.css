@@ -1,0 +1,97 @@
+.slydr {
+	width: 100%;
+	height: 20px;
+	text-align: left;
+	margin: auto;
+	cursor: pointer;
+	z-index: 997;
+	position: relative;
+	font-size: 0;
+	box-sizing: content-box;
+	user-select: none;
+	-webkit-touch-callout: none;
+	background-color: #666;
+	overflow: hidden;
+	display: inline-block;
+}
+
+.slydr .knob {
+	width: 16px;
+	background-color: #333;
+	height: inherit;
+	display: inline-block;
+	font-size: 0;
+	position: relative;
+	z-index: 1;
+	box-sizing: content-box;
+}
+
+.slydr .trak {
+	position: absolute;
+	height: inherit;
+	width: 0;
+	box-sizing: content-box;
+}
+
+.slydr.vertical {
+	transform: rotate(-90deg);
+	transform-origin: left top;
+	margin: 0;
+	top: 0;
+	left: 0;
+	backface-visibility: hidden;
+	filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+}
+
+.slydr-buttons {
+	display: inline-block;
+	cursor: pointer;
+	user-select: none;
+	vertical-align: middle;
+}
+.vertical-marks .slydr-buttons,
+.button-marks .slydr-buttons {
+	position: absolute;
+	vertical-align: top;
+}
+
+.slydr-markers {
+	position: relative;
+	margin: auto;
+	box-sizing: border-box;
+	user-select: none;
+	-webkit-touch-callout: none;
+}
+.slydr-markers div {
+	width: 0;
+	height: 5px;
+	border-left: #666 solid 1px;
+	position: absolute;
+}
+
+.button-marks {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+.vertical-marks {
+	display: inline-block;
+	margin: 0;
+	z-index: 997;
+	box-sizing: content-box;
+	transform: rotate(-90deg);
+	transform-origin: right top;
+	filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+	-webkit-backface-visibility: hidden;
+	-moz-backface-visibility: hidden;
+	-ms-backface-visibility: hidden;
+	backface-visibility: hidden;
+}
+.vertical-marks .slydr {
+	width: 100%;
+}
+.vertical-marks .slydr.vertical {
+	transform: rotate(0) !important;
+	transform-origin: unset !important;
+	filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=0) !important;
+}

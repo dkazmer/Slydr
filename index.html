@@ -9,118 +9,89 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-<title>sGlide - working</title>
+<title>Slydr - working</title>
 
 <link rel="stylesheet" href="main.css" />
+<link rel="stylesheet" href="slydr.css" />
 
 <style>
-/*#slider1 {transform-origin: 460px 260px !important;}*/
-/*#slider2 {margin: -130px -290px !important;}*/
-/*#slider1 {margin-left: 60px !important;}*/
-/*.slider_knob {background-color: #ccc !important;}*/
-.follow_bar {background-color: #363;}
-/*#slider1_vert-marks {margin-left: 60px !important;}*/
+	/*#slider1 {transform-origin: 460px 260px !important;}*/
+	/*#slider2 {margin: -130px -290px !important;}*/
+	/*#slider1 {margin-left: 60px !important;}*/
+	/*.slider_knob {background-color: #ccc !important;}*/
+	/* .trak { background-color: #363; } */
+	/*#slider1_vert-marks {margin-left: 60px !important;}*/
 </style>
 
-<!-- <script type="text/javascript" src="polyfills.js"></script> -->
-<!-- <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script> -->
-<!-- <script src="http://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-<script type="text/javascript" src="jquery.sglide_es6.js"></script> -->
-<script type="text/javascript" src="sglide_es6.js"></script>
-<!-- <script type="text/javascript" src="../../~web~/sGlide/jquery.sglide.2.min.js"></script> -->
-<!-- <script type="text/javascript" src="../../~web~/sGlide/sglide.2.1.1.min.js"></script> -->
+<script type="text/javascript" src="slydr.js"></script>
 
 <script type="text/javascript">
-	const jQ = 0;
-
 	function run(){
 		var pct = document.getElementById('percent');
 		var cb = function(o){
-			// console.log('>> o', o.custom);
+			console.log('>> obj, data', this, o);
 			// console.log('> context',this);
-			pct.innerHTML = o.id+': '+Math.round(o.percent) + '%';
+			pct.innerHTML = `${Math.round(o.percent)}%`;
 			// $pct.text(Math.round(o.percent)+'%');
 			// document.getElementById('percent').innerHTML = o.id+': '+Math.round(o.value) + '%';
 		};
 		var options = {
 			'startAt': 65,
-			'height': 20,
+			'height': 14,
 			'width': 600,
 			'unit': 'px',
 			'image': 'img/knob_.png',
 			// 'pill': false,
 			'snap': {
 				'marks': true,
-				'type': 'hard',
+				// 'type': 'hard',
 				// 'sensitivity': 3,
-				'points': 2
+				'points': 7
 			},
-			'colorShift': (!jQ ? ['#3a4d31', '#7bb560'] : ['#630', '#fc0']),
-			'vertical': true,
+			'color-shift': ['#3a4d31', '#7bb560'],
+			// 'vertical': true,
 			'buttons': true,
-			'totalRange': [-58,102],
+			'custom-ange': [-58,132],
 			// 'disabled': true,
-			// 'noHandle': true,
+			// 'no-handle': true,
 			'retina': true,
-			'drop': cb,
-			'onSnap': cb,
-			'onButton': cb
+			// 'drag': cb,
+			// 'onSnap': cb,
+			// 'onButton': cb
+			'events': {
+				// 'onDrag': cb,
+				'onSnap': cb,
+				'onBtnClick': cb
+			}
 		};
 
 		// LAUNCH IT
-
-		if (jQ){
-			const $pct = $('#percent');
-			$('.slider_bar')//;
-			//$('.slider_bar')
-			// .on('sGlide.ready', (e, data) => console.log('>> ready', data));
-			.on('sGlide.ready', function(e, data){
-				console.log('>> ready JQ', this, data);
-				// $(this).sGlide('startAt', 66.66);
-				$('#container').css('visibility', 'visible');
-				cb(data);
-			}).sGlide(options);
-		} else {
-			sglideArr = [];
-			// var nodes = document.querySelectorAll('.slider_bar');
-			var nodes = document.getElementsByClassName('slider_bar');
+		{
+			var nodes = document.querySelectorAll('.slider_bar');
+			// var nodes = document.getElementsByClassName('slider_bar');
 
 			for (const el of nodes){
-				sglideArr.push(new sGlide(el, options).load(function(data){	// can't use arrow function as it loses context
-					console.log('>> load JS', data, this);
+				new Slydr(el, options).ready(function(data){
+					console.log('>> loaded', this);
 					// this.startAt(15);
 					// this.destroy();
 					// data.percent = 15;
-					cb(data);
+					// cb.call(this, data);
 					document.getElementById('container').style.visibility = 'visible';
-				}));
+				});
 				options.startAt = 35;
 			}
 		}
-
-
-		/*for (const glide of sglideArr){
-			glide.load(function(data){	// can't use arrow function as it loses context
-				console.log('>> load!', data, this);
-				this.startAt(15);
-				// this.destroy();
-				document.getElementById('container').style.visibility = 'visible';
-			});
-		}
-		console.log('sGlideArr',sglideArr);*/
-
-		// setTimeout(function(){
-		// 	$('.slider_bar').sGlide('destroy');
-		// }, 0);
 	};
 </script>
 
 </head><body onload="run()">
 
 	<div id="container" style="visibility: hidden;">
-		<div id="percent">%</div>
-		<div id="slider1" class="slider_bar" data-keys="ctrl" style="background-color:#069; border-radius:10px; height:40px"></div><br /><br /><br /><div id="slider2" class="slider_bar_"></div>
+		<div class="slider_bar"></div><br /><br /><br />
+		<div class="slider_bar"></div>
 		<!-- <br><input type="text" value="asdljkas dlkajsd lakjs dlasjd" /> -->
 	</div>
+	<div id="percent">%</div>
 
 </body></html>

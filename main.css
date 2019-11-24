@@ -18,22 +18,20 @@ body {
 
 /* bars */
 
-.slider_bar { background-color: #555; }
+/*.slider_bar.first-child { box-shadow: inset 8px 4px 16px #333; border-bottom: #eee solid 1px; }*/
+.slider_bar.last-child { background-color: darkgray; }
 
-/*#slider1 { box-shadow: inset 8px 4px 16px #333; border-bottom: #eee solid 1px; }*/
-#slider2 { background-color: darkgray; }
-
-.sglide-markers div {
+.slydr-markers div {
 	border-left: #999 solid 1px !important;
 	top: 7px !important;
 	/*float: left;*/
 }
 
-#slider1 .follow1 { background-color: #666; /*box-shadow: inset 0 1px 3px #222; */}
-#slider1 .follow2 { background-color: #cf0; /*box-shadow: inset 0 1px 3px #222; */}
-#slider2 .follow_bar { background: #a60 url(img/barberpole.gif); }
+.slider_bar.first-child .follow1 { background-color: #666; /*box-shadow: inset 0 1px 3px #222; */}
+.slider_bar.first-child .follow2 { background-color: #cf0; /*box-shadow: inset 0 1px 3px #222; */}
+.slider_bar.last-child .follow_bar { background: #a60 url(img/barberpole.gif); }
 
-/*#slider1 .follow_bar div { box-shadow: inset 0 1px 3px #222; }*/
+/*.slider_bar.first-child .follow_bar div { box-shadow: inset 0 1px 3px #222; }*/
 
 .slider2_vert-marks {
 	-webkit-transform-origin: 210px 120px !important;
@@ -44,5 +42,5 @@ body {
 	margin: 0 auto;
 }
 
-.sglide-buttons { vertical-align: middle; border-radius: 9px; }
-.sglide-buttons:hover, .sglide-buttons:active { background-color: #fff; }
+.slydr-buttons { vertical-align: middle; border-radius: 9px; }
+.slydr-buttons:hover, .slydr-buttons:active { background-color: #fff; }

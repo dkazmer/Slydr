@@ -87,8 +87,6 @@ function sGlide(self, options){
 		eventDocumentMouseDown	= null,
 		eventDocumentKeyUp		= null,
 		eventDocumentKeyDown	= null,
-		eventKnobMouseUp		= null,
-		eventKnobMouseDown		= null,
 		eventWindowResize		= null,
 		eventBarMouseDown		= null,
 		eventPlusMinusMouseUp	= null,
@@ -322,7 +320,6 @@ function sGlide(self, options){
 			uAgent.match(/BlackBerry/i)){
 			isMobile = true;
 			mEvt.down = 'touchstart'; mEvt.up = 'touchend'; mEvt.move = 'touchmove';
-			let touchX = null, touchY = null;
 		} else if (uAgent.match(/Windows Phone/i)){
 			if (window.navigator.msPointerEnabled){
 				css(self, {'-ms-touch-action': 'none'});
@@ -448,7 +445,6 @@ function sGlide(self, options){
 		else if (unit == '%' && Math.round(width) > 100) width = 100;
 
 		let cssPrefixes		= ['-webkit-', '-khtml-', '-moz-', '-ms-', '-o-', ''],
-			cssBorderBox	= {'box-sizing': 'border-box'},
 			cssContentBox	= {'box-sizing': 'content-box'},
 			cssUserSelect	= {'user-select': 'none'},
 			cssRotate		= {'transform': 'rotate(-90deg)'};
@@ -495,7 +491,6 @@ function sGlide(self, options){
 		// snap to
 		const snaps = Math.round(settings.snap.points);
 		let marks = null;
-		let snapping_on = false;
 		let snapPctValues = [0];
 
 		const setSnapValues = () => {
@@ -509,7 +504,6 @@ function sGlide(self, options){
 				step += increment;
 			}
 
-			snapping_on = true;
 
 			if (markers) drawSnapmarks(kw);
 		};
@@ -760,7 +754,7 @@ function sGlide(self, options){
 			}
 		};
 
-		const doOnSnap = (a, b) => { // callback: onSnap
+		const doOnSnap = (a) => { // callback: onSnap
 			if (options.onSnap && 's'+a !== storedSnapValue){
 				storedSnapValue = 's'+a;
 				THE_VALUE = getPercent(a);
@@ -1019,7 +1013,7 @@ function sGlide(self, options){
 		//------------------------------------------------------------------------------------------------------------------------------------
 		// start
 
-		const setStartAt = e => {
+		const setStartAt = () => {
 			const num = THE_VALUE;
 			var rlt = updateME(num);
 
