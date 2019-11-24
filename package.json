@@ -1,14 +1,14 @@
 {
-  "name": "sglide",
-  "version": "3.1.0",
-  "description": "sGlide: a smart, lightweight and flexible slider, that's fully featured and mobile-ready. Standalone or jQuery.",
-  "main": "jquery.sglide.min.js",
+  "name": "slydr",
+  "version": "1.0.0",
+  "description": "A smart, light-weight and flexible slider, that's fully featured and mobile-ready.",
+  "main": "slydr.min.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/dkazmer/sGlide.git"
+    "url": "https://github.com/dkazmer/slydr.git"
   },
   "keywords": [
     "drag",
@@ -23,15 +23,13 @@
     "mobile",
     "arrow",
     "keys",
-    "html"
+    "html",
+    "range"
   ],
   "author": "Daniel Kazmer",
   "license": "GNU/GPL",
   "bugs": {
-    "url": "https://github.com/dkazmer/sGlide/issues"
+    "url": "https://github.com/dkazmer/slydr/issues"
   },
-  "homepage": "https://webshifted.com/sGlide",
-  "dependencies": {
-    "jquery": ">=3"
-  }
+  "homepage": "https://webshifted.com/slydr"
 }
