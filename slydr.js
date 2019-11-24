@@ -556,7 +556,7 @@ class Slydr {
 
 						if (markers) a.push(marksElement);
 
-						bMarksElement.style.width = frameElement.style.width;
+						// bMarksElement.style.width = frameElement.style.width;
 						// q = Slydr.wrapAll(a, `<div class="button-marks" style="width:${frameElement.offsetWidth}px"></div>`);
 						q = Slydr.wrapAll(a, bMarksElement);
 						// q = $('#' + guid + '_button-marks');
@@ -569,7 +569,7 @@ class Slydr {
 					q.insertBefore(plussBtn, frameElement.nextSibling);
 					q.prepend(minusBtn);
 
-					minusBtn.style['margin-left'] = '-' + minusBtn.offsetWidth + 'px';
+					// minusBtn.style['margin-left'] = '-' + minusBtn.offsetWidth + 'px';
 				} else {
 					frameElement.style.display = (!vert) ? 'inline-block' : 'block';
 					frameElement.style.verticalAlign = 'middle';

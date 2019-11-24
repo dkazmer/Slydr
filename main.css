@@ -27,20 +27,25 @@ body {
 	/*float: left;*/
 }
 
-.slider_bar.first-child .follow1 { background-color: #666; /*box-shadow: inset 0 1px 3px #222; */}
-.slider_bar.first-child .follow2 { background-color: #cf0; /*box-shadow: inset 0 1px 3px #222; */}
-.slider_bar.last-child .follow_bar { background: #a60 url(img/barberpole.gif); }
+.slider_bar:first-child .follow1 { background-color: #666; /*box-shadow: inset 0 1px 3px #222; */}
+.slider_bar:first-child .follow2 { background-color: #cf0; /*box-shadow: inset 0 1px 3px #222; */}
+.slider_bar:last-child .trak { background: #a60 url(img/barberpole.gif); }
+
+.slider_bar:first-child > .vertical,
+.slider_bar:first-child .vertical-marks {
+	margin-left: -160px;
+}
 
 /*.slider_bar.first-child .follow_bar div { box-shadow: inset 0 1px 3px #222; }*/
 
-.slider2_vert-marks {
+/* .slider2_vert-marks {
 	-webkit-transform-origin: 210px 120px !important;
 	-khtml-transform-origin: 210px 120px !important;
 	-moz-transform-origin: 210px 120px !important;
 	-ms-transform-origin: 210px 120px !important;
 	transform-origin: 210px 120px !important;
 	margin: 0 auto;
-}
+} */
 
 .slydr-buttons { vertical-align: middle; border-radius: 9px; }
 .slydr-buttons:hover, .slydr-buttons:active { background-color: #fff; }

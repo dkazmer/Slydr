@@ -10,16 +10,18 @@ Quickstart Guide: apply the following to an empty `div`.
 const callback = o => {};
 
 const options = {
-	startAt: 60,
-	width: 85,
-	height: 20,
-	snap: {
-		points: 5,
-		marks: true
+	'start-at': 60,
+	'width': 85,
+	'height': 20,
+	'snap': {
+		'points': 5,
+		'marks': true
 	},
-	drop: callback,
-	onSnap: callback
+	'events': {
+		'onDrop': callback,
+		'onSnap': callback
+	}
 };
 
-let sG_instance = new Slyder(el, options);
+let mySlider = new Slyder(el, options);
 ```

@@ -36,20 +36,20 @@
 			// document.getElementById('percent').innerHTML = o.id+': '+Math.round(o.value) + '%';
 		};
 		var options = {
-			'startAt': 65,
+			'start-at': 65,
 			'height': 14,
 			'width': 600,
 			'unit': 'px',
-			'image': 'img/knob_.png',
+			// 'image': 'img/knob_.png',
 			// 'pill': false,
 			'snap': {
-				'marks': true,
+				// 'marks': true,
 				// 'type': 'hard',
 				// 'sensitivity': 3,
 				'points': 7
 			},
 			'color-shift': ['#3a4d31', '#7bb560'],
-			// 'vertical': true,
+			'vertical': true,
 			'buttons': true,
 			'custom-ange': [-58,132],
 			// 'disabled': true,
@@ -79,7 +79,8 @@
 					// cb.call(this, data);
 					document.getElementById('container').style.visibility = 'visible';
 				});
-				options.startAt = 35;
+				options['start-at'] = 35;
+				options.image = 'img/knob_.png';
 			}
 		}
 	};

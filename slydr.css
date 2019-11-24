@@ -13,6 +13,7 @@
 	background-color: #666;
 	overflow: hidden;
 	display: inline-block;
+	vertical-align: middle;
 }
 
 .slydr .knob {
@@ -21,7 +22,7 @@
 	height: inherit;
 	display: inline-block;
 	font-size: 0;
-	position: relative;
+	position: absolute;
 	z-index: 1;
 	box-sizing: content-box;
 }
@@ -35,7 +36,7 @@
 
 .slydr.vertical {
 	transform: rotate(-90deg);
-	transform-origin: left top;
+	transform-origin: right top;
 	margin: 0;
 	top: 0;
 	left: 0;
@@ -49,11 +50,11 @@
 	user-select: none;
 	vertical-align: middle;
 }
-.vertical-marks .slydr-buttons,
+/* .vertical-marks .slydr-buttons,
 .button-marks .slydr-buttons {
 	position: absolute;
 	vertical-align: top;
-}
+} */
 
 .slydr-markers {
 	position: relative;
@@ -72,6 +73,7 @@
 .button-marks {
 	display: inline-block;
 	vertical-align: middle;
+	font-size: 0;
 }
 
 .vertical-marks {
