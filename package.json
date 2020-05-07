@@ -1,35 +1,33 @@
 {
-  "name": "slydr",
-  "version": "1.0.0",
-  "description": "A smart, light-weight and flexible slider, that's fully featured and mobile-ready.",
-  "main": "slydr.min.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/dkazmer/slydr.git"
-  },
-  "keywords": [
-    "drag",
-    "responsive",
-    "slider",
-    "loadbar",
-    "gauge",
-    "vertical",
-    "smart",
-    "snapping",
-    "dynamic",
-    "mobile",
-    "arrow",
-    "keys",
-    "html",
-    "range"
-  ],
-  "author": "Daniel Kazmer",
-  "license": "GNU/GPL",
-  "bugs": {
-    "url": "https://github.com/dkazmer/slydr/issues"
-  },
-  "homepage": "https://webshifted.com/slydr"
+	"name": "slydr",
+	"version": "4.0.0",
+	"description": "A smart, light-weight and flexible slider, that's fully featured and mobile-ready.",
+	"main": "slydr.min.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/dkazmer/slydr.git"
+	},
+	"keywords": [
+		"drag",
+		"responsive",
+		"slider",
+		"vertical",
+		"smart",
+		"snapping",
+		"dynamic",
+		"mobile",
+		"arrow",
+		"keys",
+		"html",
+		"range"
+	],
+	"author": "Daniel Kazmer",
+	"license": "GNU/GPL",
+	"bugs": {
+		"url": "https://github.com/dkazmer/slydr/issues"
+	},
+	"homepage": "https://webshifted.com/slydr"
 }

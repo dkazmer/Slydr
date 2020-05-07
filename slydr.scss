@@ -1,0 +1,152 @@
+.slydr {
+	width: 100%;
+	height: 20px;
+	text-align: left;
+	margin: auto;
+	cursor: pointer;
+	z-index: 997;
+	position: relative;
+	font-size: 0;
+	box-sizing: content-box;
+	user-select: none;
+	-webkit-touch-callout: none;
+	background-color: #666;
+	overflow: hidden;
+	display: inline-block;
+	vertical-align: middle;
+	border-radius: 10px !important;
+	border-bottom: #ccc solid 1px;
+	box-shadow: 0 1px 4px #000 inset;
+	.knob {
+		width: 16px;
+		background-color: #333;
+		height: inherit;
+		display: inline-block;
+		font-size: 0;
+		position: absolute;
+		z-index: 1;
+		box-sizing: content-box;
+	}
+	.trak {
+		position: absolute;
+		height: inherit;
+		width: 0;
+		box-sizing: content-box;
+		box-shadow: inherit;
+		overflow: hidden;
+		border-top-left-radius: inherit;
+		border-bottom-left-radius: inherit;
+		div {
+			height: 100%;
+			box-shadow: inherit;
+			background-color: inherit;
+			filter: brightness(1.3);
+			border-top-left-radius: inherit;
+			border-bottom-left-radius: inherit;
+		}
+	}
+	&.vertical {
+		transform: rotate(-90deg);
+		transform-origin: right top;
+		margin: 0;
+		top: 0;
+		left: 0;
+		backface-visibility: hidden;
+	}
+}
+
+.slydr-buttons {
+	display: inline-block;
+	cursor: pointer;
+	user-select: none;
+	vertical-align: middle;
+}
+
+.slydr-markers {
+	position: relative;
+	margin: auto;
+	box-sizing: border-box;
+	user-select: none;
+	-webkit-touch-callout: none;
+	div {
+		width: 0;
+		height: 5px;
+		border-left: #666 solid 1px;
+		position: absolute;
+	}
+}
+
+.button-marks {
+	display: inline-block;
+	vertical-align: middle;
+	font-size: 0;
+}
+
+.vertical-marks {
+	display: inline-block;
+	margin: 0;
+	z-index: 997;
+	box-sizing: content-box;
+	transform: rotate(-90deg);
+	transform-origin: right top;
+	backface-visibility: hidden;
+	.slydr {
+		width: 100%;
+		&.vertical {
+			transform: rotate(0) !important;
+			transform-origin: unset !important;
+		}
+	}
+}
+
+span.slydr-flag {
+	position: absolute;
+	z-index: 1;
+	background-color: black;
+	color: white;
+	padding: 6px 10px;
+	font-family: 'Lucida Sans Unicode';
+	font-size: 12px;
+	line-height: 18px;
+	border-radius: 4px;
+	display: inline-block;
+	text-align: center;
+	cursor: default;
+	user-select: none;
+	opacity: 0;
+	min-width: 23px;
+	transition: opacity .3s linear;
+	&:before {
+		content: '';
+		position: absolute;
+		display: block;
+		width: 10px;
+		height: 12px;
+		box-sizing: border-box;
+		border: 6px solid transparent;
+		border-top-color: black;
+		top: 30px;
+		left: 15px;
+	}
+	&.vertical{
+		margin-left: -32px;
+		&:before {
+			border-top-color: transparent;
+			border-left-color: black;
+			top: 9px;
+			left: unset;
+			right: -12px;
+		}
+	}
+	&:not(.vertical) {
+		margin-top: -37px;
+	}
+}
+
+.slydr-active span.slydr-flag,
+.slydr-markers:hover ~ span.slydr-flag,
+.slydr:hover ~ span.slydr-flag,
+.button-marks:hover ~ span.slydr-flag,
+.vertical-marks:hover ~ span.slydr-flag {
+	opacity: 1;
+}

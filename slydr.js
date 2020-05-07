@@ -10,85 +10,84 @@
 
  A derivitive of sGlide, completely refactored and rebranded as Slydr.
  No longer supporting legacy browsers or maintaining jQuery iteration.
- 
+
 ***********************************************************************************/
 
 "use strict";
 
-class Slydr {
+export class Slydr {
 	constructor (container, options) {
-		this.container = container;
-
 		var that = this;
 		var is_down = false;
-		var frameElement, trakElement, knobElement, THE_VALUE, plussBtn, minusBtn;
+		var frameElement, trakElement, knobElement, flagElement, THE_VALUE, plussBtn, minusBtn;
 
 		var settings = (o => {
 			let obj = Object.assign({
 				'start-at': 0,
-				'image': '',	// full path of image
-				'height': 40,
-				'width': 100,
-				'unit': '%',	// 'px' or '%'
-				'pill': true,
-				'color-shift': [],
-				'disabled': false,
-				'vertical': false,
+				image: '',	// full path of image
+				height: 40,
+				width: 100,
+				unit: '%',	// 'px' or '%'
+				'color-shift': false,
+				disabled: false,
+				vertical: false,
 				'no-handle': false,
-				'buttons': false,
-				'retina': false,
+				buttons: false,
+				retina: false,
 				'custom-range': [0, 0],
-				'key-control': false
+				'key-control': false,
+				flag: false
 			}, o);
 
 			obj.snap = Object.assign({
-				'marks': false,
-				'type': false,
-				'points': 0,
-				'sensitivity': 2
+				marks: false,
+				type: false,
+				points: 0,
+				sensitivity: 2
 			}, o.snap);
-
-			obj.events = Object.assign({}, o.events);
 
 			return obj;
 		})(options);
-		// console.log('>> settings', settings);
 
 		let result = 0;
 		let marksElement = null;
 		let bMarksElement = null;
 		let vMarksElement = null;
 		let MSoffsetTop = null;
-		let notify = null;
 
+		const userCallbacks = {};
 		const vert = settings.vertical;
 		const is_snap = (settings.snap.points > 1 && settings.snap.points <= 11);
 		const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 		const snaps = Math.round(settings.snap.points);
 		const snapType = (settings.snap.type != 'hard' && settings.snap.type != 'soft') ? false : settings.snap.type;
-		const colorChangeBln = (settings['color-shift'].length > 1);
+		const colorChangeBln = settings['color-shift'];
 		const markers = (is_snap && settings.snap.marks);
 		const eventMakeReady = new Event('makeready.' + Slydr.entries.length);
-		const customRange = (settings['custom-range'][0] !== 0 || settings['custom-range'][1] !== 0) && settings['custom-range'][0] < settings['custom-range'][1];
+		const customRange = settings['custom-range'];
+		const hasCustomRange = (customRange[0] !== 0 || customRange[1] !== 0) && customRange[0] < customRange[1];
 		const keyCtrl = (settings['key-control'] == true);//(frameElement.getAttribute('data-keys') === 'true');
 		const keyCtrlCtrl = (settings['key-control'] === 'ctrl');//(frameElement.getAttribute('data-keys') === 'ctrl');
 		const keyCtrlShift = (settings['key-control'] === 'shift');//(frameElement.getAttribute('data-keys') === 'shift');
-		// if (isMobile) {}
 
 		this.is = {
-			get colorShift() { return colorChangeBln }
-			// get customRange() { return customRange; }
+			get disabled() { return settings.disabled }
 		};
 
-		this.data = {
-			get percent() { return THE_VALUE }
+		this.get = {
+			data: {
+				get value() { return THE_VALUE },
+				get 'init-value'() { return settings['start-at'] }
+			},
+			get 'user-callbacks'() { return userCallbacks },
+			get elements() { return { knob: knobElement, trak: trakElement, frame: frameElement, container: container, flag: flagElement } }
 		};
 
-		if (customRange) {
-			const cstmStart = settings['custom-range'][0];
-			const diff = settings['custom-range'][1] - cstmStart;
+		if (hasCustomRange) {
+			const cstmStart = customRange[0];
+			const diff = customRange[1] - cstmStart;
 
-			Object.defineProperty(this.data, 'custom-unit', {
+			Object.defineProperty(this.get.data, 'unit', {
 				get() { return diff * THE_VALUE / 100 + cstmStart }
 			});
 		}
@@ -96,7 +95,7 @@ class Slydr {
 		const execute = reset => {
 			if (reset) this.destroy(true);
 			houseKeeping();
-			build();
+			build.init();
 			setupEvents();
 			initImage(settings.image && !settings['no-handle']);
 			keyboardControls();
@@ -107,29 +106,30 @@ class Slydr {
 				if (vert) verticalTransform();
 				if (settings.buttons) pushButtons.draw();
 				if (colorChangeBln) colorShiftInit();
-				
+
 				this.position = THE_VALUE = settings['start-at'] || 50;
 
-				// ready
-				if (notify instanceof Function) notify.call(this, this.data);
-				delete this.ready;
+				if (settings.flag) build.flag();
+				if (userCallbacks.ready) userCallbacks.ready();
 			});
 
 			if (!reset) Slydr.entries.push(this);
 		};
 
-		const build = () => {
-			frameElement = this.frameElement = Slydr.create('slydr', container);
-			trakElement = this.trak = Slydr.create('trak', frameElement);
-			knobElement = this.knob = Slydr.create('knob', frameElement);
+		const build = {
+			init() {
+				frameElement = Slydr.create('slydr', container);
+				trakElement = Slydr.create('trak', frameElement);
+				knobElement = Slydr.create('knob', frameElement);
 
-			frameElement.style.width = settings.width + settings.unit;
-			frameElement.style.height = settings.height + 'px';
+				frameElement.style.width = settings.width + settings.unit;
+				frameElement.style.height = settings.height + 'px';
 
-			if (settings.pill) {
-				let d = frameElement.offsetHeight / 2;
-				frameElement.style['border-radius'] = d + 'px';
-				trakElement.style['border-radius'] = d + 'px 0 0 ' + d + 'px';
+				container.classList.add('slydr-container');
+			},
+			flag() {
+				flagElement = Slydr.create('slydr-flag', container, 'span');
+				that.flag(settings.vertical);
 			}
 		};
 
@@ -139,16 +139,12 @@ class Slydr {
 		};
 
 		const colorShiftInit = () => {
-			trakElement.style.overflow = 'hidden';
-			trakElement.style.backgroundColor = settings['color-shift'][0];
-			trakElement.innerHTML = `<div style="opacity:${settings['start-at'] / 100}; height:100%; background-color:${settings['color-shift'][1]};"></div>`;
+			Slydr.create('', trakElement).style.opacity = String(settings['start-at'] / 100);
 		};
 
 		const colorChange = pct => trakElement.children[0].style.opacity = pct / 100;
 
 		const initImage = imageBln => {
-			var pill = settings.pill;
-
 			if (imageBln) {	// if image
 				let path = settings.image;
 				const retina = (window.devicePixelRatio > 1) && settings.retina;
@@ -187,9 +183,7 @@ class Slydr {
 
 					// set bar styles
 					trakElement.style.height = knob_height;
-					trakElement.style['border-radius'] = pill ? imgHeight / 2 + 'px 0 0 ' + imgHeight / 2 + 'px' : '0';
 					frameElement.style.height = knob_height;
-					frameElement.style['border-radius'] = pill ? imgHeight / 2 + 'px' : '0';
 
 					knobElement.removeChild(img);
 
@@ -201,7 +195,6 @@ class Slydr {
 						frameElement.style.overflow = 'visible';
 						knobElement.style.top = `-${knobMarginValue}px`;
 						trakElement.style.height = settings.height + 'px';
-						trakElement.style['border-radius'] = pill ? imgHeight / 2 + 'px 0 0 ' + imgHeight / 2 + 'px' : '0';
 					}
 
 					frameElement.dispatchEvent(eventMakeReady);
@@ -209,8 +202,6 @@ class Slydr {
 			} else {
 				var d = settings.height / 2;
 				frameElement.style.overflow = 'hidden';
-				frameElement.style['border-radius'] = (pill ? d + 'px' : '0');
-				trakElement.style['border-radius'] = (pill ? d + 'px 0 0 ' + d + 'px' : '0');
 				setTimeout(() => {
 					frameElement.dispatchEvent(eventMakeReady);
 				}, 0);
@@ -268,35 +259,25 @@ class Slydr {
 			}
 		};
 
-		this.ready = fn => notify = fn;
-
 		const mouse = {
-			'down': (isMobile ? 'touchstart' : 'mousedown'),
-			'move': (isMobile ? 'touchmove' : 'mousemove'),
-			'up': (isMobile ? 'touchend' : 'mouseup')
+			down: (isMobile ? 'touchstart' : 'mousedown'),
+			move: (isMobile ? 'touchmove' : 'mousemove'),
+			up: (isMobile ? 'touchend' : 'mouseup')
 		};
 
 		const events = {
-			'barMouseDown': e => {
+			barMouseDown(e) {
 				if (e.returnValue) e.returnValue = false;	// wp
 
 				is_down = true;
 				frameElement.dataset.state = 'active';
+				container.classList.add('slydr-active');
 
-				if(!isMobile) {// && snapType !== 'hard'){
+				if (!isMobile) {// && snapType !== 'hard'){
 					const shellWidth = frameElement.offsetWidth;
 					const knobWidth = knobElement.offsetWidth;
-					let x = null;
 
-					if (vert) {
-						// MS bug: manually set offsetTop, otherwise try to get the vertical wrapper's offsetTop
-						if (window.navigator.msPointerEnabled && MSoffsetTop === null) MSoffsetTop = frameElement.getBoundingClientRect().top;
-						else if (vMarksElement !== null && MSoffsetTop === null) MSoffsetTop = vMarksElement.offsetTop;
-
-						const base = (MSoffsetTop !== null ? MSoffsetTop : frameElement.offsetTop) + shellWidth;
-						// var base = frameElement.offsetTop + shellWidth;
-						x = base - (e.pageY - 2);
-					} else x = e.pageX - frameElement.offsetLeft;
+					var x = events.cursorRegistration(e);
 
 					let m = x - (knobWidth / 2);	// true position of knob
 
@@ -312,37 +293,25 @@ class Slydr {
 					knobElement.style.left = m + 'px';
 					trakElement.style.width = m + (knobWidth / 2) + 'px';
 
-					if (!snapType || snapType === 'hard') snap.init('drag', m);
+					if (!snapType || snapType === 'hard')
+						THE_VALUE = that.getPercent(snapType === 'hard' ? snap.init('drag', m) : m);
 
-					// color change
-					if (colorChangeBln) colorChange(this.getPercent(m));
+					// color change / flag
+					if (colorChangeBln) colorChange(THE_VALUE);
+					if (settings.flag) {
+						that.flag(settings.vertical);
+					}
 				}
 			},
-			'docMouseMove': e => {
+			docMouseMove(e) {
 				if (is_down) {
 					const shellWidth = frameElement.offsetWidth;
 					const knobWidth = knobElement.offsetWidth;
-					var x = null;
 
-					if (vert) {
-						// MS bug: manually set offsetTop, otherwise try to get the vertical wrapper's offsetTop
-						if (window.navigator.msPointerEnabled && MSoffsetTop === null) MSoffsetTop = frameElement.getBoundingClientRect().top;
-						else if (vMarksElement !== null && MSoffsetTop === null) MSoffsetTop = vMarksElement.offsetTop;
+					var x = events.cursorRegistration(e);
 
-						let base = (MSoffsetTop !== null ? MSoffsetTop : frameElement.offsetTop) + shellWidth;
-						if (isMobile) {
-							touchY = e.targetTouches[0].pageY;
-							x = base - touchY;
-						} else x = base - e.pageY;
-					} else {
-						if (isMobile) {
-							touchX = e.targetTouches[0].pageX;
-							x = touchX - frameElement.offsetLeft;
-						} else x = e.pageX - frameElement.offsetLeft;
-					}
-
-					const stopper = knobWidth / 2,
-						m = x - stopper;
+					const stopper = knobWidth / 2;
+					const m = x - stopper;
 
 					if (e.returnValue) e.returnValue = false;
 
@@ -355,6 +324,7 @@ class Slydr {
 						trakElement.style.width = (shellWidth - stopper) + 'px';
 					} else {
 						knobElement.style.left = (x - stopper) + 'px';
+						// knobElement.style.transform = `translateX(${x - stopper}px)`;
 						trakElement.style.width = x + 'px';
 						// if (!settings.snap.onlyOnDrop) doSnap('drag', m);
 						if (!snapType || snapType === 'hard') snap.init('drag', m);
@@ -366,18 +336,20 @@ class Slydr {
 					// var state = frameElement.getAttribute('data-state');
 					var state = frameElement.dataset.state;
 
-					THE_VALUE = this.getPercent(result);
+					THE_VALUE = that.getPercent(result);
+
+					if (settings.flag) that.flag(settings.vertical);
 
 					// update values
-					if (settings.events.onDrag && state === 'active')
-						settings.events.onDrag.call(that, that.data);
+					// if (settings.events.onDrag && state === 'active') settings.events.onDrag.call(that, that.get.data);
+					if (userCallbacks.drag) userCallbacks.drag(that.get.data);
 
 					// color change
 					if (colorChangeBln && state === 'active')
 						colorChange(THE_VALUE);
 				}
 			},
-			'docMouseUp': e => {
+			docMouseUp() {
 				is_down = false;
 				if (frameElement.dataset.state === 'active') {
 					const m = knobElement.offsetLeft;
@@ -388,20 +360,22 @@ class Slydr {
 					else
 						result = (m < 0 ? 0 : m);
 
-					THE_VALUE = this.getPercent(result);
+					THE_VALUE = that.getPercent(result);
 
-					if (settings.events.drop) settings.events.drop.call(that, that.data);
-					if (settings.events.drag) settings.events.drag.call(that, that.data);
+					if (userCallbacks.drop) userCallbacks.drop(that.get.data);
+
 					frameElement.dataset.state = 'inactive';
+					container.classList.remove('slydr-active');
 
-					// color change
+					// color change / flag
 					if (colorChangeBln) colorChange(THE_VALUE);
+					if (settings.flag) that.flag(settings.vertical);
 				}
 
 				// if button pressed but released off button, clear button action
 				if (pushButtons.is_down) pushButtons.clearAction();
 			},
-			'winResize': () => {
+			winResize() {
 				const kw = knobElement.offsetWidth;
 				const shellWidth = frameElement.offsetWidth;
 				that['start-at'] = THE_VALUE;
@@ -416,6 +390,26 @@ class Slydr {
 						div.style.left = val + 'px';
 					});
 				}
+
+				/* if (settings.flag) {
+					const rect = settings.vertical ? knobElement.getBoundingClientRect() : { left: knobElement.offsetLeft };
+
+					if (isVertical)
+						$.flag.style.transform = `translateY(${$.frame.offsetWidth - $.knob.offsetLeft}px)`;
+						// $.flag.style.top = `${rect.top + $.frame.offsetTop - 7}px`;
+					else
+						$.flag.style.transform = `translateX(${$.frame.offsetWidth * -1 + $.knob.offsetLeft}px)`;
+						// $.flag.style.left = `${rect.left + $.frame.offsetLeft - 7}px`;
+				} */
+			},
+			cursorRegistration(e) {
+				const rect = frameElement.getBoundingClientRect();
+
+				if (vert) {
+					let base = rect.top + frameElement.offsetWidth;
+					return Math.floor(base - (isMobile ? e.targetTouches[0].pageY : e.pageY));
+				}
+				return Math.floor((isMobile ? e.targetTouches[0].pageX : e.pageX) - rect.left);
 			}
 		};
 
@@ -429,10 +423,10 @@ class Slydr {
 		};
 
 		const snap = {
-			'pctValues': [0],
-			'storedValue': 's-1',
-			'index': null,
-			'init': function(kind, m) {
+			pctValues: [0],
+			storedValue: 's-1',
+			index: null,
+			init(kind, m) {
 				if (is_snap) {	// min 1, max 9
 					var sense = settings.snap.sensitivity;
 
@@ -477,12 +471,12 @@ class Slydr {
 						} else {
 							knobElement.style.left = closest + 'px';
 							trakElement.style.width = closest + knobWidth / 2 + 'px';
-							// return closest;
 						}
+						return closest;
 					}
 				}
 			},
-			'setValues': function() {
+			setValues() {
 				var kw = knobElement.offsetWidth;
 
 				// percentage
@@ -495,13 +489,13 @@ class Slydr {
 
 				if (markers) this.drawMarks(kw);
 			},
-			'drawMarks': kw => {
+			drawMarks(kw) {
 				
 				var shellWidth = frameElement.offsetWidth;
 				frameElement.insertAdjacentHTML('afterend', '<div class="slydr-markers"></div>');
 				marksElement = frameElement.parentNode.getElementsByClassName('slydr-markers')[0];
 
-				marksElement.style.width = shellWidth + 'px'; //settings.width + unit
+				marksElement.style.width = shellWidth + 'px';
 
 				if (marksElement) {
 					let str = '';
@@ -518,14 +512,14 @@ class Slydr {
 					marksElement.innerHTML = str;
 				}
 			},
-			'on': function(a) { // callback: onSnap
-				if (options.events.onSnap && 's' + a !== this.storedValue) {
+			on(a) { // callback: onSnap
+				if ('s' + a !== this.storedValue) {
 					this.storedValue = 's' + a;
 					THE_VALUE = that.getPercent(a);
-					if (options.events.onSnap) options.events.onSnap.call(that, that.data);
+					if (userCallbacks.snap) userCallbacks.snap(that.get.data);
 				}
 			},
-			'pre': function() {
+			pre() {
 				switch (snapType) {
 					case 'hard': case 'soft': {
 						this.init('drag', knobElement.offsetLeft);
@@ -536,7 +530,11 @@ class Slydr {
 		};
 
 		const pushButtons = {
-			'draw': function() {
+			knob_adjust: 0,
+			is_down: false,
+			timers: null,
+			snap: (is_snap && (snapType === 'hard' || snapType === 'soft')),
+			draw() {
 				this.knob_adjust = knobElement.offsetWidth / frameElement.offsetWidth * 50;
 
 				plussBtn = Slydr.create('slydr-buttons');
@@ -550,7 +548,9 @@ class Slydr {
 				if (markers) {
 					let q = null;
 					if (!vert) {
+						// frameElement.style.display = 'block';
 						// frameElement.style.width = 'auto';
+						frameElement.style.width = `${marksElement.offsetWidth}px`;
 						let a = [frameElement];
 						bMarksElement = Slydr.create('button-marks');
 
@@ -586,7 +586,7 @@ class Slydr {
 					minusBtn.addEventListener(mouse.up, this.clearAction);
 				}
 			},
-			'triggers': function(direction, smoothBln) {
+			triggers(direction, smoothBln) {
 				// var set_value = THE_VALUE = valueObj[guid];
 				if (this.snap) {
 					if (snap.index === null) {
@@ -627,84 +627,26 @@ class Slydr {
 
 				// output
 				THE_VALUE = that.getPercent(pxAdjust);
-				if (options.events.onBtnClick) options.events.onBtnClick.call(that, that.data);
+
+				if (settings.flag) that.flag(settings.vertical);
+
+				if (userCallbacks['button-press']) userCallbacks['button-press'](that.get.data);
 			},
-			'hold': function(dir) {
+			hold(dir) {
 				var btnHold_timer = setInterval(() => {
 					if (this.is_down) this.triggers(dir, true);
 					else clearInterval(btnHold_timer);
 				}, (this.snap ? 101 : 10));
 			},
-			'clearAction': function() {
+			clearAction() {
 				this.is_down = false;
 				clearTimeout(this.timers);
 			},
-			'eventMouseDown': function(dir) {
+			eventMouseDown(dir) {
 				this.is_down = true;
 				this.triggers(dir);
 				this.timers = setTimeout(() => this.hold(dir), 500);
-			},
-			'knob_adjust': 0,
-			'is_down': false,
-			'timers': null,
-			'snap': (is_snap && (snapType === 'hard' || snapType === 'soft'))
-		};
-
-		this.destroy = reset => {
-			// unwrap vertical buttons
-			// const vertframeElement = frameElement.closest('.vert-marks');
-
-			// unwrap vMarksElement
-			if (vMarksElement) {
-				const vertParent = vMarksElement.parentNode;
-				vertParent.insertBefore(frameElement, vMarksElement.nextSibling);
-				vertParent.removeChild(vMarksElement);
 			}
-
-			const markers = frameElement.parentNode.querySelector('.slydr-markers');
-			if (markers) markers.parentNode.removeChild(markers);
-
-			if (isMobile) {
-				document.removeEventListener(mouse.down, eventDocumentMouseDown);
-			} else if (keyCtrl || keyCtrlShift || keyCtrlCtrl) {
-				document.removeEventListener('keydown', events.docKeyDown);
-				document.removeEventListener('keyup', events.docKeyUp);
-			}
-
-			// remove buttons
-			if (settings.buttons) {
-				const buttonsParent = plussBtn.parentNode;
-				buttonsParent.removeChild(plussBtn);
-				buttonsParent.removeChild(minusBtn);
-				plussBtn = minusBtn = null;
-
-				// unwrap 
-				if (!vMarksElement) {
-					if (bMarksElement) {
-						const bMarksElementParent = bMarksElement.parentNode;
-						bMarksElementParent.insertBefore(bMarksElement.childNodes[0], bMarksElement.nextSibling);
-						bMarksElementParent.removeChild(bMarksElement);
-					}
-				}
-			}
-
-			document.removeEventListener(mouse.move, events.docMouseMove);
-			document.removeEventListener(mouse.up, events.docMouseUp);
-			window.removeEventListener('resize', events.winResize);
-			frameElement.removeEventListener(mouse.down, events.barMouseDown);
-			frameElement.removeChild(knobElement);
-			frameElement.removeChild(trakElement);
-			frameElement.removeAttribute('style');
-			frameElement.removeAttribute('data-state');
-			frameElement.classList.remove('vertical');
-
-			if (!reset) {
-				for (let i in this) delete this[i];
-				Slydr.entries.forEach((item, i) => {
-					if (item === this) Slydr.entries.splice(i, 1);
-				});
-			}
-			// console.log('>> destroyed!');
 		};
 
 		this.reset = () => execute(true);
@@ -713,14 +655,61 @@ class Slydr {
 	}
 
 	getPercent(num) {
-		var pct = num / (this.frameElement.offsetWidth - this.knob.offsetWidth) * 100;
+		var pct = num / (this.get.elements.frame.offsetWidth - this.get.elements.knob.offsetWidth) * 100;
 		return Math.min(pct, 100);
+	}
+
+	on(name, fn) {
+		switch (name) {
+			case 'ready': case 'drop': case 'drag': case 'snap': case 'button-press':
+				this.get['user-callbacks'][name] = e => fn.call(this, e); break; // passing "this" provides context
+			default:
+				console.warn('Slydr: "' + name + '" isn\'t an accepted event name. See documentation.');
+		}
+
+		return this; // chainable
+	}
+
+	destroy(reset) {
+		const container = this.get.elements.container;
+
+		while (container.firstChild) container.removeChild(container.firstChild);
+
+		container.classList.remove('slydr-container');
+
+		if (!reset) {
+			for (let i in this) delete this[i];
+			Slydr.entries.forEach((item, i) => {
+				if (item === this) Slydr.entries.splice(i, 1);
+			});
+		}
+	}
+
+	flag(isVertical) {
+		const data = this.get.data;
+		const $ = this.get.elements;
+		// const rect = isVertical ? $.knob.getBoundingClientRect() : { left: $.knob.offsetLeft };
+
+		$.flag.textContent = `${Math.round(data.value)}%`;
+
+		if (isVertical && !$.flag.classList.contains('vertical'))
+			$.flag.classList.add('vertical');
+		else if (!isVertical)
+			$.flag.classList.remove('vertical');
+
+		if (isVertical)
+			$.flag.style.transform = `translateY(${$.frame.offsetWidth - $.knob.offsetLeft}px)`;
+			// $.flag.style.top = `${rect.top + $.frame.offsetTop - 7}px`;
+		else
+			$.flag.style.transform = `translateX(${$.frame.offsetWidth * -1 + $.knob.offsetLeft}px)`;
+			// $.flag.style.left = `${rect.left + $.frame.offsetLeft - 7}px`;
 	}
 
 	set position(pct) {
 		// set pixel positions
-		const shellWidth = this.frameElement.offsetWidth;
-		const knobWidth = this.knob.offsetWidth;
+		const elements = this.get.elements;
+		const shellWidth = this.get.elements.frame.offsetWidth;
+		const knobWidth = elements.knob.offsetWidth;
 
 		// constraints
 		if (pct <= 0) pct = 0;
@@ -731,12 +720,12 @@ class Slydr {
 		const pxAdjust = px - (knobWidth / 2);
 
 		// gui
-		this.knob.style.left = pxAdjust + 'px';
-		this.trak.style.width = px + 'px';
+		elements.knob.style.left = pxAdjust + 'px';
+		elements.trak.style.width = px + 'px';
 
 		// color shifting
 		if (this.is.colorShift)
-			this.trak.children[0].style.opacity = pct / 100;
+			elements.trak.children[0].style.opacity = pct / 100;
 	}
 
 	static wrapAll(elements, wrapper) {
@@ -745,11 +734,22 @@ class Slydr {
 		return wrapper;
 	}
 
-	static create(className, put) {
-		var div = document.createElement('div');
+	static create(className, put, el) {
+		var div = document.createElement(el || 'div');
 		div.className = className;
 		if (put) put.appendChild(div);
 		return div;
+	}
+
+	static get info() {
+		return {
+			'author': 'Daniel B. Kazmer (webshifted.com)',
+			'created': '2019-11-23',
+			'modified': '2020-05-02',
+			'version': '1.0.0 beta',
+			'github': 'https://github.com/dkazmer/slydr',
+			'home-page': 'https://webshifted.com/slydr'
+		}
 	}
 }
 

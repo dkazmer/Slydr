@@ -14,79 +14,68 @@
 <link rel="stylesheet" href="main.css" />
 <link rel="stylesheet" href="slydr.css" />
 
-<style>
-	/*#slider1 {transform-origin: 460px 260px !important;}*/
-	/*#slider2 {margin: -130px -290px !important;}*/
-	/*#slider1 {margin-left: 60px !important;}*/
-	/*.slider_knob {background-color: #ccc !important;}*/
-	/* .trak { background-color: #363; } */
-	/*#slider1_vert-marks {margin-left: 60px !important;}*/
-</style>
+<!-- <script type="text/javascript" src="slydr.js"></script> -->
+<script type="module">
+	import { Slydr } from './slydr.js';
 
-<script type="text/javascript" src="slydr.js"></script>
+	window.Slydr = Slydr;
 
-<script type="text/javascript">
-	function run(){
-		var pct = document.getElementById('percent');
-		var cb = function(o){
-			console.log('>> obj, data', this, o);
-			// console.log('> context',this);
-			pct.innerHTML = `${Math.round(o.percent)}%`;
-			// $pct.text(Math.round(o.percent)+'%');
-			// document.getElementById('percent').innerHTML = o.id+': '+Math.round(o.value) + '%';
-		};
-		var options = {
-			'start-at': 65,
-			'height': 14,
-			'width': 600,
-			'unit': 'px',
-			// 'image': 'img/knob_.png',
-			// 'pill': false,
-			'snap': {
-				// 'marks': true,
-				// 'type': 'hard',
-				// 'sensitivity': 3,
-				'points': 7
-			},
-			'color-shift': ['#3a4d31', '#7bb560'],
-			'vertical': true,
-			'buttons': true,
-			'custom-ange': [-58,132],
-			// 'disabled': true,
-			// 'no-handle': true,
-			'retina': true,
-			// 'drag': cb,
-			// 'onSnap': cb,
-			// 'onButton': cb
-			'events': {
-				// 'onDrag': cb,
-				'onSnap': cb,
-				'onBtnClick': cb
-			}
-		};
-
-		// LAUNCH IT
-		{
-			var nodes = document.querySelectorAll('.slider_bar');
-			// var nodes = document.getElementsByClassName('slider_bar');
-
-			for (const el of nodes){
-				new Slydr(el, options).ready(function(data){
-					console.log('>> loaded', this);
-					// this.startAt(15);
-					// this.destroy();
-					// data.percent = 15;
-					// cb.call(this, data);
-					document.getElementById('container').style.visibility = 'visible';
-				});
-				options['start-at'] = 35;
-				options.image = 'img/knob_.png';
-			}
-		}
+	var pct = document.getElementById('percent');
+	var cb = o => {
+		// console.log('>> obj', o);
+		// console.log('> context',this);
+		pct.innerHTML = `${Math.round(o.value)}%`;
+		// $pct.text(Math.round(o.percent)+'%');
+		// document.getElementById('percent').innerHTML = o.id+': '+Math.round(o.value) + '%';
 	};
+	var options = {
+		'start-at': 65,
+		height: 14,
+		width: 600,
+		unit: 'px',
+		// image: 'img/knob_.png',
+		snap: {
+			// 'marks': true,
+			// 'type': 'hard',
+			// 'sensitivity': 3,
+			// points: 7
+		},
+		'color-shift': true,
+		vertical: true,
+		// buttons: true,
+		'custom-ange': [-58,132],
+		// disabled: true,
+		// no-handle: true,
+		retina: true,
+		flag: true
+	};
+	
+	// LAUNCH IT
+	setTimeout(() => {
+		var nodes = document.getElementsByClassName('slider_bar');
+		// var nodes = document.getElementsByClassName('slider_bar');
+
+		for (const el of nodes){
+			new Slydr(el, options).on('ready', function(data){
+				// console.log('>> loaded', this);
+				// this.destroy();
+				document.getElementById('container').style.visibility = 'visible';
+			}).on('drag', cb);
+
+			options['start-at'] = 35;
+			options.image = 'img/knob_.png';
+		}
+	}, 0);
+
+	/* setTimeout(() => {
+		console.log('Slydr proto', Slydr.prototype);
+		Slydr.entries[1].on('shit', function(x) {
+			console.log('>> shit', x);
+		})
+	}, 4000); */
 </script>
 
-</head><body onload="run()">
+</head><body>
 
 	<div id="container" style="visibility: hidden;">
 		<div class="slider_bar"></div><br /><br /><br />
