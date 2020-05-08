@@ -5,7 +5,7 @@
 new Slydr(container, settings)
 ```
 
-A smart, lightweight and flexible slider, that's fully featured, responsive and mobile-ready. Standalone or jQuery. It can be easily customized and styled using regular CSS.
+A smart, lightweight and flexible slider, that's fully featured, responsive and mobile-ready. (Formerly sGlide)
 
 
 ### Install
@@ -53,7 +53,7 @@ All settings with their default values. Visit home page for detailed breakdown.
 
 ### Styles
 
-Styles have be separated from the logic, so a stylesheet is a virtual requirement for proper display. Edit at your whim.
+Styles have been separated from the logic, so a stylesheet is a virtual requirement for proper display. Edit at your whim.
 ```
 slydr.scss
 ```
@@ -61,7 +61,7 @@ slydr.scss
 
 ### Callbacks
 
-Fire callbacks at specific internal events using chainable on proto method. mySlydr.on("drag", func)
+Fire callbacks at specific internal events using chainable on proto method. `mySlydr.on("drag", func)`
 
 Type | Description
 --- | ---

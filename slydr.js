@@ -11,6 +11,11 @@
  A derivitive of sGlide, completely refactored and rebranded as Slydr.
  No longer supporting legacy browsers or maintaining jQuery iteration.
 
+ - test custom range
+ - rethink disabled
+ - send unit to flag
+ - rename settings.unit
+
 ***********************************************************************************/
 
 "use strict";
@@ -83,12 +88,29 @@ export class Slydr {
 			get elements() { return { knob: knobElement, trak: trakElement, frame: frameElement, container: container, flag: flagElement } }
 		};
 
+		this.set = {
+			data: {
+				set value(v) { goTo(v) }
+			},
+			set disabled(v) { settings.disabled = v }
+		}
+
 		if (hasCustomRange) {
 			const cstmStart = customRange[0];
 			const diff = customRange[1] - cstmStart;
 
+			// getter
 			Object.defineProperty(this.get.data, 'unit', {
 				get() { return diff * THE_VALUE / 100 + cstmStart }
+			});
+
+			// setter
+			Object.defineProperty(this.set.data, 'unit', {
+				set(v) {
+					var t = v - customRange[0];
+					var pct = t / diff * 100;
+					goTo(pct);
+				}
 			});
 		}
 
@@ -267,6 +289,7 @@ export class Slydr {
 
 		const events = {
 			barMouseDown(e) {
+				if (settings.disabled) return;
 				if (e.returnValue) e.returnValue = false;	// wp
 
 				is_down = true;
@@ -277,7 +300,7 @@ export class Slydr {
 					const shellWidth = frameElement.offsetWidth;
 					const knobWidth = knobElement.offsetWidth;
 
-					var x = events.cursorRegistration(e);
+					let x = events.cursorRegistration(e);
 
 					let m = x - (knobWidth / 2);	// true position of knob
 
@@ -420,6 +443,23 @@ export class Slydr {
 				document.addEventListener(mouse.up, events.docMouseUp);
 				window.addEventListener('resize', events.winResize);
 			}
+		};
+
+		const goTo = pct => {
+			if (pct <= 0) pct = 0; else if (pct >= 100) pct = 100;
+			THE_VALUE = pct;
+
+			const selfWidth = frameElement.offsetWidth;
+			const knobWidth = knobElement.offsetWidth;
+			const px = (selfWidth - knobWidth) * pct / 100 + (knobWidth / 2);
+			const pxAdjust = px - (knobWidth / 2);
+
+			// gui
+			knobElement.style.left = `${pxAdjust}px`;
+			trakElement.style.width = `${px}px`;
+
+			if (colorChangeBln) trakElement.children[0].style.opacity = String(pct / 100);
+			if (settings.flag) that.flag(settings.vertical);
 		};
 
 		const snap = {
@@ -588,6 +628,7 @@ export class Slydr {
 			},
 			triggers(direction, smoothBln) {
 				// var set_value = THE_VALUE = valueObj[guid];
+				if (settings.disabled) return;
 				if (this.snap) {
 					if (snap.index === null) {
 						for (let i = 0; i < snap.pctValues.length; i++) {
