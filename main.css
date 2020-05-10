@@ -54,3 +54,7 @@ body {
 
 .slydr-buttons { vertical-align: middle; border-radius: 9px; }
 .slydr-buttons:hover, .slydr-buttons:active { background-color: #fff; }
+
+.slydr {
+	width: 400px !important;
+}

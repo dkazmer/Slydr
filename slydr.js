@@ -4,21 +4,14 @@
  
  author:	Daniel B. Kazmer (webshifted.com)
  created:	23.11.2019
- version:	1.0.0 beta
+ version:	4.0.0
  github:	https://github.com/dkazmer/slydr
  home page: https://webshifted.com/slydr
 
  A derivitive of sGlide, completely refactored and rebranded as Slydr.
  No longer supporting legacy browsers or maintaining jQuery iteration.
 
- - test custom range
- - rethink disabled
- - send unit to flag
- - rename settings.unit
-
 ***********************************************************************************/
-
-"use strict";
 
 export class Slydr {
 	constructor (container, options) {
@@ -30,9 +23,6 @@ export class Slydr {
 			let obj = Object.assign({
 				'start-at': 0,
 				image: '',	// full path of image
-				height: 40,
-				width: 100,
-				unit: '%',	// 'px' or '%'
 				'color-shift': false,
 				disabled: false,
 				vertical: false,
@@ -54,11 +44,10 @@ export class Slydr {
 			return obj;
 		})(options);
 
-		let result = 0;
-		let marksElement = null;
-		let bMarksElement = null;
-		let vMarksElement = null;
-		let MSoffsetTop = null;
+		var result = 0;
+		var marksElement = null;
+		var bMarksElement = null;
+		var vMarksElement = null;
 
 		const userCallbacks = {};
 		const vert = settings.vertical;
@@ -68,70 +57,32 @@ export class Slydr {
 		const snapType = (settings.snap.type != 'hard' && settings.snap.type != 'soft') ? false : settings.snap.type;
 		const colorChangeBln = settings['color-shift'];
 		const markers = (is_snap && settings.snap.marks);
-		const eventMakeReady = new Event('makeready.' + Slydr.entries.length);
 		const customRange = settings['custom-range'];
 		const hasCustomRange = (customRange[0] !== 0 || customRange[1] !== 0) && customRange[0] < customRange[1];
 		const keyCtrl = (settings['key-control'] == true);//(frameElement.getAttribute('data-keys') === 'true');
 		const keyCtrlCtrl = (settings['key-control'] === 'ctrl');//(frameElement.getAttribute('data-keys') === 'ctrl');
 		const keyCtrlShift = (settings['key-control'] === 'shift');//(frameElement.getAttribute('data-keys') === 'shift');
 
-		this.is = {
-			get disabled() { return settings.disabled }
-		};
-
-		this.get = {
-			data: {
-				get value() { return THE_VALUE },
-				get 'init-value'() { return settings['start-at'] }
-			},
-			get 'user-callbacks'() { return userCallbacks },
-			get elements() { return { knob: knobElement, trak: trakElement, frame: frameElement, container: container, flag: flagElement } }
-		};
-
-		this.set = {
-			data: {
-				set value(v) { goTo(v) }
-			},
-			set disabled(v) { settings.disabled = v }
-		}
-
-		if (hasCustomRange) {
-			const cstmStart = customRange[0];
-			const diff = customRange[1] - cstmStart;
-
-			// getter
-			Object.defineProperty(this.get.data, 'unit', {
-				get() { return diff * THE_VALUE / 100 + cstmStart }
-			});
-
-			// setter
-			Object.defineProperty(this.set.data, 'unit', {
-				set(v) {
-					var t = v - customRange[0];
-					var pct = t / diff * 100;
-					goTo(pct);
-				}
-			});
-		}
-
 		const execute = reset => {
 			if (reset) this.destroy(true);
 			houseKeeping();
 			build.init();
-			setupEvents();
-			initImage(settings.image && !settings['no-handle']);
-			keyboardControls();
+			setup.general().events().keyboardControls();
 
 			// Listen for image loaded
-			frameElement.addEventListener('makeready.' + Slydr.entries.length, () => {
+			initImage(settings.image && !settings['no-handle']).then(() => {
 				if (is_snap) { snap.setValues(); setTimeout(() => snap.pre(), 0); }
-				if (vert) verticalTransform();
+				if (vert) setup.verticalTransform();
 				if (settings.buttons) pushButtons.draw();
 				if (colorChangeBln) colorShiftInit();
-
-				this.position = THE_VALUE = settings['start-at'] || 50;
-
 				if (settings.flag) build.flag();
+
+				// start at unit / pct
+				if (hasCustomRange)
+					this.set.data.unit = settings['start-at'] || 0;
+				else
+					position(settings['start-at'] || 50);
+
 				if (userCallbacks.ready) userCallbacks.ready();
 			});
 
@@ -143,9 +94,6 @@ export class Slydr {
 				frameElement = Slydr.create('slydr', container);
 				trakElement = Slydr.create('trak', frameElement);
 				knobElement = Slydr.create('knob', frameElement);
-
-				frameElement.style.width = settings.width + settings.unit;
-				frameElement.style.height = settings.height + 'px';
 
 				container.classList.add('slydr-container');
 			},
@@ -167,118 +115,56 @@ export class Slydr {
 		const colorChange = pct => trakElement.children[0].style.opacity = pct / 100;
 
 		const initImage = imageBln => {
-			if (imageBln) {	// if image
-				let path = settings.image;
-				const retina = (window.devicePixelRatio > 1) && settings.retina;
+			return new Promise(resolve => {
+				if (imageBln) {	// if image
+					let path = settings.image;
+					const retina = (window.devicePixelRatio > 1) && settings.retina;
 
-				// retina handling
-				if (retina) {
-					const ix = path.lastIndexOf('.');
-					path = path.slice(0, ix) + '@2x' + path.slice(ix);
-				}
-
-				let img = new Image();
-				img.onload = imgLoad;
-				img.src = path;
-
-				knobElement.appendChild(img);
-
-				function imgLoad() {
-					if (retina)
-						img.style.width = (img.offsetWidth / 2) + 'px';
-					// img.style.height = (img.offsetHeight / 2) + 'px';
-
-					// determine knob image style requirements
-					var imgHeight = img.offsetHeight;
-					var knob_width = img.offsetWidth + 'px';
-					var knob_height = imgHeight + 'px';
-					var knob_bg = `url(${path}) no-repeat`;
-
-					// apply knob image styles
-					knobElement.style.width = knob_width;
-					knobElement.style.height = knob_height;
-
-					setTimeout(() => {
-						knobElement.style.background = knob_bg;
-						if (retina) knobElement.style.backgroundSize = '100%';
-					}, 0);
-
-					// set bar styles
-					trakElement.style.height = knob_height;
-					frameElement.style.height = knob_height;
-
-					knobElement.removeChild(img);
-
-					// bar height less than that of knob
-					if (imgHeight > settings.height) {
-						var knobMarginValue = (imgHeight - settings.height) / 2;
-
-						frameElement.style.height = settings.height + 'px';
-						frameElement.style.overflow = 'visible';
-						knobElement.style.top = `-${knobMarginValue}px`;
-						trakElement.style.height = settings.height + 'px';
+					// retina handling
+					if (retina) {
+						const ix = path.lastIndexOf('.');
+						path = path.slice(0, ix) + '@2x' + path.slice(ix);
 					}
 
-					frameElement.dispatchEvent(eventMakeReady);
-				}
-			} else {
-				var d = settings.height / 2;
-				frameElement.style.overflow = 'hidden';
-				setTimeout(() => {
-					frameElement.dispatchEvent(eventMakeReady);
-				}, 0);
-			}
-		};
+					let img = new Image();
+					img.onload = imgLoad;
+					img.src = path;
 
-		const verticalTransform = () => {
-			if (markers) {
-				let a = [frameElement, marksElement];
+					function imgLoad() {
+						if (retina)
+							img.style.width = (img.offsetWidth / 2) + 'px';
+						// img.style.height = (img.offsetHeight / 2) + 'px';
 
-				vMarksElement = Slydr.create('vertical-marks');
-				Slydr.wrapAll(a, vMarksElement);
-			}
+						// determine knob image style requirements
+						var imgHeight = img.naturalHeight;
+						var knob_width = img.naturalWidth + 'px';
+						var knob_height = imgHeight + 'px';
+						var knob_bg = `url(${path}) no-repeat`;
 
-			frameElement.classList.add('vertical');
-		};
+						// apply knob image styles
+						knobElement.style.width = knob_width;
+						knobElement.style.height = knob_height;
 
-		const keyboardControls = () => {
-			if (!isMobile && (keyCtrl || keyCtrlShift || keyCtrlCtrl) && !settings.disabled) {
-				let keycode, keydown = false, shifted = false, ctrled = false,
-					codeBack = vert ? 40 : 37,
-					codeFwd = vert ? 38 : 39;
+						setTimeout(() => {
+							knobElement.style.background = knob_bg;
+							if (retina) knobElement.style.backgroundSize = '100%';
+						}, 0);
 
-				events.docKeyDown = e => {
-					if (!keydown) {
-						if (window.event) {
-							keycode = window.event.keyCode;
-							shifted = window.event.shiftKey;
-							ctrled = window.event.ctrlKey;
-						} else if (e) {
-							keycode = e.which;
-							shifted = e.shiftKey;
-							ctrled = e.ctrlKey;
+						// bar height less than that of knob
+						if (imgHeight > frameElement.offsetHeight) {
+							var knobMarginValue = (imgHeight - frameElement.offsetHeight) / 2;
+
+							frameElement.style.overflow = 'visible';
+							knobElement.style.top = `-${knobMarginValue}px`;
 						}
 
-						// if shift required, then shift must be pressed
-						if (keyCtrlShift && shifted && !ctrled || keyCtrlCtrl && ctrled && !shifted || !keyCtrlShift && !keyCtrlCtrl) {
-							if (keycode === codeBack) {
-								pushButtons.eventMouseDown('<');
-								keydown = true;
-							} else if (keycode === codeFwd) {
-								pushButtons.eventMouseDown('>');
-								keydown = true;
-							}
-						}
+						resolve();
 					}
-				};
-				events.docKeyUp = () => {
-					keydown = false;
-					pushButtons.clearAction();
-				};
-
-				document.addEventListener('keydown', events.docKeyDown);
-				document.addEventListener('keyup', events.docKeyUp);
-			}
+				} else {
+					frameElement.style.overflow = 'hidden';
+					setTimeout(resolve, 0);
+				}
+			})
 		};
 
 		const mouse = {
@@ -436,16 +322,110 @@ export class Slydr {
 			}
 		};
 
-		const setupEvents = () => {
-			if (!settings.disabled) {
+		const setup = {
+			events() {
+				// if (!settings.disabled) {
 				frameElement.addEventListener(mouse.down, events.barMouseDown);
 				document.addEventListener(mouse.move, events.docMouseMove);
 				document.addEventListener(mouse.up, events.docMouseUp);
 				window.addEventListener('resize', events.winResize);
+				// }
+				return this;
+			},
+			general() {
+				that.is = {
+					get disabled() { return settings.disabled }
+				};
+
+				that.get = {
+					data: {
+						get value() { return THE_VALUE },
+						get 'init-value'() { return settings['start-at'] }
+					},
+					get 'user-callbacks'() { return userCallbacks },
+					get elements() { return { knob: knobElement, trak: trakElement, frame: frameElement, container: container, flag: flagElement } }
+				};
+
+				that.set = {
+					data: {
+						set value(v) { goTo(v) }
+					},
+					set disabled(v) { settings.disabled = v }
+				}
+
+				if (hasCustomRange) {
+					const cstmStart = customRange[0];
+					const diff = customRange[1] - cstmStart;
+
+					// getter
+					Object.defineProperty(that.get.data, 'unit', {
+						get() { return diff * THE_VALUE / 100 + cstmStart }
+					});
+
+					// setter
+					Object.defineProperty(that.set.data, 'unit', {
+						set(v) {
+							var t = v - customRange[0];
+							var pct = t / diff * 100;
+							position(pct);
+						}
+					});
+				}
+
+				return this;
+			},
+			verticalTransform() {
+				if (markers) {
+					let a = [frameElement, marksElement];
+
+					vMarksElement = Slydr.create('vertical-marks');
+					Slydr.wrapAll(a, vMarksElement);
+				}
+
+				frameElement.classList.add('vertical');
+			},
+			keyboardControls() {
+				if (!isMobile && (keyCtrl || keyCtrlShift || keyCtrlCtrl) && !settings.disabled) {
+					let keycode, keydown = false, shifted = false, ctrled = false,
+						codeBack = vert ? 40 : 37,
+						codeFwd = vert ? 38 : 39;
+
+					events.docKeyDown = e => {
+						if (!keydown) {
+							if (window.event) {
+								keycode = window.event.keyCode;
+								shifted = window.event.shiftKey;
+								ctrled = window.event.ctrlKey;
+							} else if (e) {
+								keycode = e.which;
+								shifted = e.shiftKey;
+								ctrled = e.ctrlKey;
+							}
+
+							// if shift required, then shift must be pressed
+							if (keyCtrlShift && shifted && !ctrled || keyCtrlCtrl && ctrled && !shifted || !keyCtrlShift && !keyCtrlCtrl) {
+								if (keycode === codeBack) {
+									pushButtons.eventMouseDown('<');
+									keydown = true;
+								} else if (keycode === codeFwd) {
+									pushButtons.eventMouseDown('>');
+									keydown = true;
+								}
+							}
+						}
+					};
+					events.docKeyUp = () => {
+						keydown = false;
+						pushButtons.clearAction();
+					};
+
+					document.addEventListener('keydown', events.docKeyDown);
+					document.addEventListener('keyup', events.docKeyUp);
+				}
 			}
 		};
 
-		const goTo = pct => {
+		const position = pct => {
 			if (pct <= 0) pct = 0; else if (pct >= 100) pct = 100;
 			THE_VALUE = pct;
 
@@ -588,9 +568,12 @@ export class Slydr {
 				if (markers) {
 					let q = null;
 					if (!vert) {
+						// console.log('markds w', `${marksElement.offsetWidth}px !important`, frameElement);
+
 						// frameElement.style.display = 'block';
 						// frameElement.style.width = 'auto';
-						frameElement.style.width = `${marksElement.offsetWidth}px`;
+						// frameElement.style.width = `${marksElement.offsetWidth}px !important`;
+						frameElement.style.cssText += `width: ${marksElement.offsetWidth}px !important`;
 						let a = [frameElement];
 						bMarksElement = Slydr.create('button-marks');
 
@@ -618,13 +601,13 @@ export class Slydr {
 					frameElement.parentNode.insertBefore(minusBtn, frameElement);
 				}
 
-				if (!settings.disabled) {
+				// if (!settings.disabled) {
 					plussBtn.addEventListener(mouse.down, () => this.eventMouseDown('>'));
 					plussBtn.addEventListener(mouse.up, this.clearAction);
 
 					minusBtn.addEventListener(mouse.down, () => this.eventMouseDown('<'));
 					minusBtn.addEventListener(mouse.up, this.clearAction);
-				}
+				// }
 			},
 			triggers(direction, smoothBln) {
 				// var set_value = THE_VALUE = valueObj[guid];
@@ -731,7 +714,7 @@ export class Slydr {
 		const $ = this.get.elements;
 		// const rect = isVertical ? $.knob.getBoundingClientRect() : { left: $.knob.offsetLeft };
 
-		$.flag.textContent = `${Math.round(data.value)}%`;
+		$.flag.textContent = data.unit ? String(Math.round(data.unit*100)/100) : `${Math.round(data.value)}%`;
 
 		if (isVertical && !$.flag.classList.contains('vertical'))
 			$.flag.classList.add('vertical');
@@ -744,29 +727,6 @@ export class Slydr {
 		else
 			$.flag.style.transform = `translateX(${$.frame.offsetWidth * -1 + $.knob.offsetLeft}px)`;
 			// $.flag.style.left = `${rect.left + $.frame.offsetLeft - 7}px`;
-	}
-
-	set position(pct) {
-		// set pixel positions
-		const elements = this.get.elements;
-		const shellWidth = this.get.elements.frame.offsetWidth;
-		const knobWidth = elements.knob.offsetWidth;
-
-		// constraints
-		if (pct <= 0) pct = 0;
-		else if (pct >= 100) pct = 100;
-
-		// set pixel positions
-		const px = (shellWidth - knobWidth) * pct / 100 + (knobWidth / 2);
-		const pxAdjust = px - (knobWidth / 2);
-
-		// gui
-		elements.knob.style.left = pxAdjust + 'px';
-		elements.trak.style.width = px + 'px';
-
-		// color shifting
-		if (this.is.colorShift)
-			elements.trak.children[0].style.opacity = pct / 100;
 	}
 
 	static wrapAll(elements, wrapper) {
@@ -785,9 +745,9 @@ export class Slydr {
 	static get info() {
 		return {
 			'author': 'Daniel B. Kazmer (webshifted.com)',
-			'created': '2019-11-23',
-			'modified': '2020-05-02',
-			'version': '1.0.0 beta',
+			'created': '2012-11-24',
+			'modified': '2020-05-09',
+			'version': '4.0.0 beta',
 			'github': 'https://github.com/dkazmer/slydr',
 			'home-page': 'https://webshifted.com/slydr'
 		}
