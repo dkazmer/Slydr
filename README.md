@@ -29,9 +29,6 @@ All settings with their default values. Visit home page for detailed breakdown.
 {
 	"start-at": 0,
 	"image": "",
-	"height": 40,
-	"width": 100,
-	"unit": "%",
 	"color-shift": false,
 	"disabled": false,
 	"vertical": false,
@@ -65,11 +62,11 @@ Fire callbacks at specific internal events using chainable on proto method. `myS
 
 Type | Description
 --- | ---
-`ready` | Fire an event on instance readiness. Receives nothing.
-`drop` | Fire an event on handle drop. Receives an argument containing slider data.
-`drag` | Fire an event on handle drag. Receives an argument containing slider data.
-`snap` | Fire an event on handle snap. Receives an argument containing slider data.
-`button-press` | Fire an event clicking or holding one of the −/+ buttons. Returns an object containing slider data. Requires buttons.
+`ready` | Fires on instance readiness. Receives nothing.
+`drop` | Fires on handle drop. Receives an argument containing slider data.
+`drag` | Fires on handle drag. Receives an argument containing slider data.
+`snap` | Fires on handle snap. Receives an argument containing slider data.
+`button-press` | Fires when clicking or holding one of the −/+ buttons. Returns an object containing slider data. Requires buttons.
 
 
 ### Helpers
